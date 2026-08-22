@@ -1,0 +1,229 @@
+# Habits — regras do projeto
+
+App pessoal de hábitos. Expo SDK 57, React Native 0.86, React 19.2 + React Compiler,
+New Architecture, expo-router, Reanimated 4, TypeScript strict. **Android apenas** (celular e
+tablet). Tema **escuro travado**. Idioma **pt-BR**.
+
+`PRD.md` na raiz é a fonte da verdade do produto. Se esta regra e o PRD divergirem, o PRD vence
+e esta regra deve ser corrigida.
+
+**Antes de escrever qualquer código Expo, consulte https://docs.expo.dev/versions/v57.0.0/.**
+O SDK mudou; conhecimento de versões anteriores está errado com frequência.
+
+---
+
+## 1. Arquitetura — invioláveis
+
+```
+src/domain/    puro. Sem React, sem banco, sem UI, sem Date.now(). É o que tem teste.
+src/data/      adapters finos: Drizzle, Supabase, notificações. Sem regra de negócio.
+src/ui/        design system fechado. Sem regra de negócio, sem acesso a dados.
+src/features/  telas compostas, uma pasta por tela.
+src/app/       rotas do expo-router. Finas: só montam a feature correspondente.
+src/widget/    react-native-android-widget.
+```
+
+- **`src/domain/` não importa `react`, `react-native`, `drizzle`, `@supabase`, nem nada de
+  `src/data`, `src/ui`, `src/features`, `src/app`.** Isso é validado por lint. Se você precisa
+  quebrar essa regra, o desenho está errado, não a regra.
+- **Relógio é parâmetro, nunca global.** Nenhuma função de domínio chama `Date.now()` ou
+  `new Date()` sem argumento. Quem sabe que horas são é a borda.
+- **Um arquivo por conceito, não por função.** `streak.ts` exporta as funções de streak. Não crie
+  `calculate-current-streak.ts`. Arquivo com uma função exportada e 10 linhas não deve existir.
+- **A regra difícil mora no service, o componente chama um método simples.** Se um `.tsx` tem
+  `if` sobre regra de negócio, essa lógica está no lugar errado.
+- **Sem barrel files** (`index.ts` que só reexporta). Importe do arquivo real.
+
+## 2. Datas — a fonte de bug número um
+
+- Dia é sempre `string` no formato `YYYY-MM-DD`, em horário **local**. Nunca UTC, nunca timestamp.
+- O dia lógico considera `dayStartHour` (default 04:00): subtraia as horas antes de formatar.
+  Uma marcação às 00:40 de terça pertence ao dia lógico de segunda.
+- Nunca compare datas por objeto `Date`. Compare as strings.
+- Nunca use `toISOString()` para derivar um dia — ele converte para UTC e erra o dia.
+
+## 3. Design system — nenhum valor solto
+
+Todo valor visual sai de `src/ui/theme.ts`. **Hex literal, número de espaçamento e `fontFamily`
+solto em componente são erro de lint, não questão de estilo.**
+
+### Espaçamento
+Múltiplos de 8, com um único meio-passo: `xs 4` · `sm 8` · `md 16` · `lg 24` · `xl 32` ·
+`2xl 40` · `3xl 64`. Não existe `padding: 13`.
+
+### Raios
+`sm 8` · `md 12` · `lg 16` · `xl 22` · `pill 999`.
+
+### Cor
+- Fundos: `ground #0A0710` · `surface #14101C` · `surfaceRaised #1B1826` · `surfaceOverlay #221E30`
+- Texto: `ink #F3F1F8` · `inkMuted #9A93AD` · `inkFaint #5D5670` · `inkDisabled #3A3547`
+- Divisória: `line rgba(255,255,255,0.09)`
+- **Todo chrome do app é violeta `#6C4BF6`** — botão primário, foco, seletor, anéis da visão
+  geral. Independe da cor dos hábitos.
+- A cor do hábito vem da paleta fechada de 10 e tinge **apenas**: quadrado do ícone (16% de
+  opacidade), bolinhas do grid daquele hábito, chips e o glow do card dele.
+- `color` no banco guarda a **chave** da paleta (`violeta`), nunca o hex.
+- Semânticas separadas do accent: `sucesso #34B978` · `perigo #EE5757`.
+
+### Tipografia
+**Barlow Condensed** para tudo, inclusive o widget. Use as variantes, nunca `fontSize` cru:
+`display` (92/700) · `title` (28/600) · `heading` (20/600) · `body` (16/400) · `label` (13/500) ·
+`caption` (12/400).
+
+- Rótulo em caixa alta **sempre** com tracking `0.16em`. Condensada em caixa alta sem tracking
+  é ilegível.
+- Todo número em coluna: `fontVariant: ['tabular-nums']`.
+- pt-BR é mais largo que inglês. `ARRASTE PARA COMPLETAR` não pode truncar — reserve largura.
+- `allowFontScaling` fica ligado. Nunca anime para altura fixa medida no tamanho padrão.
+
+## 4. Profundidade no escuro — sombra suave, nunca dura
+
+No escuro, profundidade se faz com **luz**, não com preto:
+
+- Superfície mais alta é **mais clara** e ganha borda superior `rgba(255,255,255,0.04)`.
+- Sombra preta só sob o que flutua de verdade (bottom sheet, FAB): difusa, muito espalhada,
+  opacidade baixa. Nunca sombra dura ou com offset grande.
+- **Nunca anime `elevation`** — o Android re-renderiza a sombra a cada frame. Anime a opacidade
+  de uma camada já sombreada.
+- **Nunca anime `intensity` de `BlurView`** — mesma razão. Faça crossfade de opacidade.
+- Glow (o brilho roxo do card) é `shadowColor` na cor do accent com raio grande e opacidade
+  baixa, sempre estático.
+
+## 5. Movimento
+
+Reanimated 4 com worklets. **`Animated` do core é proibido.**
+
+### Antes de animar, passe pelo portão
+| Frequência | Decisão |
+|---|---|
+| 100+ vezes/dia (rolagem, troca de aba, teclado) | **Não anima.** Padrão da plataforma. |
+| Dezenas de vezes/dia (feedback de toque, navegação) | Só o imperceptível: < 150 ms |
+| Ocasional (sheet, modal, toast) | Animação normal |
+| Raro (marcar hábito, bater a meta, estado vazio) | É aqui que mora o orçamento de encanto |
+
+Não consegue nomear o propósito em uma palavra — *feedback*, *consistência espacial*, *indicação
+de estado*, *evitar corte brusco*, *explicação*, *encanto*? Então não anime.
+
+### Curvas — use estas, não aproxime
+```ts
+const EASE_OUT    = Easing.bezier(0.23, 1, 0.32, 1);      // entrada e saída
+const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);     // movimento na tela
+const EASE_SHEET  = Easing.bezier(0.32, 0.72, 0, 1);      // bottom sheet
+```
+- Entrando ou saindo → `ease-out`. Movendo na tela → `ease-in-out`. Progresso → `linear`.
+- **`ease-in` é proibido em UI.** Começa devagar exatamente no instante que o usuário observa.
+
+### Springs — só quando houve dedo envolvido
+Use a forma de dois parâmetros, não mass/stiffness/damping:
+
+| Situação | Config |
+|---|---|
+| Assentar sem passar do ponto | `{ duration: 400, dampingRatio: 1 }` |
+| Voltar ao lugar depois de arrastar | `{ duration: 400, dampingRatio: 0.8, velocity }` |
+| Sheet, drawer | `{ duration: 300, dampingRatio: 0.8, velocity }` |
+| Não pode passar de uma borda dura | `overshootClamping: true` |
+
+Overshoot **só** quando o gesto trouxe momento. Bolinha que acende ao toque não quica.
+
+### Durações
+Feedback de toque 100–150 ms · toggle/chip 150–200 ms · sheet ~300 ms percebidos ·
+transição de tela: **o padrão da plataforma, não sobrescreva**.
+Nada de UI passa de 300 ms.
+
+### Propriedades
+- `transform` e `opacity` são grátis. **Todo o resto é passe de layout.**
+- Nunca anime `width`, `height`, `margin`, `padding`, `flex`, `top`, `gap` — exceto num elemento
+  absoluto sem filhos (barra de progresso, pílula de seletor).
+- **Nunca `scale(0)`.** Comece em `0.9–0.97` com `opacity: 0`. Nada no mundo real surge do nada.
+- `transform` é array e a ordem importa: `translate` antes de `scale`.
+
+### Fora da thread de JS
+- **Nunca `setState` dentro de gesto ou de handler de scroll.**
+- `scheduleOnRN` só em `onEnd` ou em `useAnimatedReaction` ao cruzar um limiar. Nunca em
+  `onUpdate`.
+- Use `.get()` / `.set()`, nunca `.value` — é a forma que o React Compiler enxerga.
+- Nunca leia nem escreva shared value durante render.
+- Função chamada de worklet começa com `'worklet'` na primeira linha.
+
+### Movimento reduzido
+Entra junto com a animação, nunca depois. `useReducedMotion()` / `ReduceMotion.System`.
+Reduzido significa **menos e mais suave**, não zero: mantenha opacidade e cor, corte translação,
+escala, parallax e overshoot.
+
+## 6. Estados de interação — não existe hover
+
+Este é um app de toque. Tudo que na web moraria em `:hover` precisa virar **press, posição ou
+nada**. Não escreva estado de hover; não existe.
+
+- **Feedback na descida do dedo, commit na subida.** Esperar o toque completar para mostrar algo
+  parece morto.
+- Todo pressable: `scale: 0.97` em 100–150 ms. A escala leva o rótulo e o ícone junto — é isso
+  que faz parecer físico.
+- **Alvo mínimo de 48 dp.** Se o visual é menor, adicione `hitSlop`. Não engorde o visual.
+- `pressRetentionOffset` para o dedo poder deslizar alguns pixels sem cancelar.
+- **Sem ripple do Android.** O app tem desenho próprio; a mesma escala em tudo é mais coerente.
+- **Desabilitado** é `inkDisabled` + `opacity` reduzida **e** sem reação ao toque. Nunca só a cor.
+- **Carregando** substitui o rótulo no mesmo tamanho — o botão nunca muda de largura.
+- **Destrutivo** (excluir hábito) sempre confirma, e a confirmação nomeia o que será perdido.
+
+## 7. Háptico
+
+Uma por ação do usuário. Nunca em rolagem, nunca por frame, nunca numa entrada que o usuário
+não causou. **Nunca como único feedback** — muitos Androids não têm háptico decente.
+
+| Momento | Chamada |
+|---|---|
+| Passar por um passo (seletor, detent) | `Haptics.selectionAsync()` |
+| Algo encaixa, um arraste confirma | `impactAsync(Light)` |
+| Ação destrutiva dispara | `impactAsync(Medium)` |
+| Sucesso ou erro de operação | `notificationAsync(Success / Error)` |
+
+Dispare no **mesmo frame** do visual, no momento causal — não quando a animação termina.
+
+## 8. Responsividade
+
+- Breakpoints por `useBreakpoint()`: `compact < 600dp` · `medium 600–899` · `expanded >= 900`.
+- Tablet **ganha coluna, não ganha tamanho.** Nunca esticar o layout de celular.
+- Tipografia e célula do grid crescem em **degraus fixos** por breakpoint. Nunca escala contínua
+  sobre a largura da tela.
+- Toda tela nova nasce testada nos três breakpoints, nas duas orientações.
+
+## 9. Código
+
+- TypeScript strict. **`any` é proibido**; `as` só com comentário justificando.
+- Sem default export, exceto rotas do expo-router (que exigem).
+- Nome de arquivo em `kebab-case`, componente em `PascalCase`, hook em `useCamelCase`.
+- Estado de servidor e estado local não se misturam. A UI lê do banco local, ponto.
+- Instale dependência com `npx expo install <pkg>`, nunca `npm install` — só o primeiro resolve
+  a versão do SDK.
+- Comentário explica **por que**, nunca **o que**. Código que precisa de comentário para dizer o
+  que faz deve ser reescrito.
+- Textos de UI em pt-BR, direto no código. Não existe camada de i18n.
+
+## 10. Testes
+
+TDD nos seams acordados, e **só** neles: `calendar`, `schedule`, `streak`, `stats`, `sync`,
+`widget-snapshot`. Vitest, sobre funções puras, com relógio injetado.
+
+- Vermelho antes de verde. Um teste, uma implementação mínima, repete.
+- Fatia vertical, nunca horizontal: não escreva todos os testes antes de todo o código.
+- O valor esperado vem de fonte independente (um exemplo trabalhado à mão), nunca recalculado do
+  mesmo jeito que o código calcula.
+- **Repositórios (Drizzle) e telas ficam deliberadamente fora de teste.** São adapters finos,
+  verificados usando o app. Não escreva teste de componente sem combinar antes.
+
+## 11. Commits
+
+Conventional commits, em português, escopo pela área tocada.
+
+```
+feat(habito): criar hábito com ícone, cor e agenda
+fix(streak): dia não agendado deixava de ser neutro
+refactor(dominio): extrair cálculo de dia lógico para calendar.ts
+test(streak): cobrir modo timesPerWeek na semana corrente
+chore(deps): adicionar drizzle-orm e expo-sqlite
+docs(prd): registrar decisão de uma linha por dia em completions
+```
+
+Tipos: `feat` · `fix` · `docs` · `style` · `refactor` · `test` · `chore`.
+Um commit por passo da fatia vertical. Commit que mistura duas fatias deve ser dividido.
