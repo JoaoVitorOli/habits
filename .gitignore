@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# skills (symlinks/junctions gerados por `npx skills`; o conteudo real vive em .agents/)
+.claude/skills/
