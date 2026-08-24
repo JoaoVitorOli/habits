@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { deleteHabit, habitByIdQuery, scheduleOf, updateHabit } from '@/data/habits';
+import { deleteHabit, habitByIdQuery, updateHabit } from '@/data/habits';
 import { HabitForm } from '@/features/habit-form/habit-form';
 import { paletteKeyOf } from '@/domain/palette';
+import { scheduleOf } from '@/domain/schedule';
 import { Button } from '@/ui/button';
 import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Text } from '@/ui/text';

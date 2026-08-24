@@ -9,11 +9,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
-import { archiveHabit, habitByIdQuery, scheduleOf, updateStreakGoal } from '@/data/habits';
+import { archiveHabit, habitByIdQuery, updateStreakGoal } from '@/data/habits';
 import { notesOfHabit, saveNote } from '@/data/notes';
 import { monthOf, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
-import { weekdaysOf, type Schedule } from '@/domain/schedule';
+import { scheduleOf, weekdaysOf, type Schedule } from '@/domain/schedule';
 import { monthRate } from '@/domain/stats';
 import { currentStreak, goalProgress, recordStreak, streakUnit } from '@/domain/streak';
 import { DayNoteDialog } from '@/features/habit-detail/day-note-dialog';

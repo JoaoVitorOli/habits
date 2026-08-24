@@ -6,11 +6,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { completionsSince } from '@/data/completions';
-import { activeHabitsQuery, scheduleOf } from '@/data/habits';
+import { activeHabitsQuery } from '@/data/habits';
 import { addDays, monthOf, startOfMonth, type Day } from '@/domain/calendar';
 import { dayRatio, perfectDays, type HabitProgress } from '@/domain/overview';
 import { paletteKeyOf } from '@/domain/palette';
-import { isScheduled } from '@/domain/schedule';
+import { isScheduled, scheduleOf } from '@/domain/schedule';
 import { monthRate } from '@/domain/stats';
 import { currentStreak, streakUnit } from '@/domain/streak';
 import { DaySummaryDialog } from '@/features/overview/day-summary-dialog';

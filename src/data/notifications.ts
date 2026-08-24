@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { db } from '@/data/db';
 import { habits } from '@/data/schema';
 import { remindersFor } from '@/domain/reminder';
-import type { Schedule } from '@/domain/schedule';
+import { scheduleOf } from '@/domain/schedule';
 
 const CHANNEL = 'lembretes';
 
@@ -49,12 +49,7 @@ export async function rescheduleReminders(): Promise<void> {
     .where(and(isNull(habits.deletedAt), isNull(habits.archivedAt), isNotNull(habits.reminderTime)));
 
   for (const row of rows) {
-    const schedule: Schedule =
-      row.scheduleKind === 'timesPerWeek'
-        ? { kind: 'timesPerWeek', times: row.scheduleTimes ?? 1 }
-        : { kind: 'daysOfWeek', days: row.scheduleDays ?? 0 };
-
-    for (const trigger of remindersFor(schedule, row.reminderTime)) {
+    for (const trigger of remindersFor(scheduleOf(row), row.reminderTime)) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: row.name,

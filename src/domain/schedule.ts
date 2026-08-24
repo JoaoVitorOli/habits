@@ -29,3 +29,18 @@ export function isScheduled(schedule: Schedule, day: Day): boolean {
   if (schedule.kind === 'timesPerWeek') return true;
   return (schedule.days & weekdayBit(weekdayOf(day))) !== 0;
 }
+
+/**
+ * A linha do banco guarda a agenda em duas colunas, so uma delas preenchida. Quem le a
+ * linha quer um valor so — home, detalhe, lembretes e widget faziam essa traducao cada um
+ * do seu jeito.
+ */
+export function scheduleOf(row: {
+  scheduleKind: string;
+  scheduleDays: number | null;
+  scheduleTimes: number | null;
+}): Schedule {
+  return row.scheduleKind === 'timesPerWeek'
+    ? { kind: 'timesPerWeek', times: row.scheduleTimes ?? 1 }
+    : { kind: 'daysOfWeek', days: row.scheduleDays ?? 0 };
+}

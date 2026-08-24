@@ -9,10 +9,11 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { completionsSince, toggleCompletion } from '@/data/completions';
-import { activeHabitsQuery, scheduleOf } from '@/data/habits';
+import { activeHabitsQuery } from '@/data/habits';
 import type { HabitRow } from '@/data/schema';
 import { addDays, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
+import { scheduleOf } from '@/domain/schedule';
 import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';

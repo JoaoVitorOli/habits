@@ -70,12 +70,6 @@ export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow>
   return row;
 }
 
-export function scheduleOf(row: HabitRow): Schedule {
-  return row.scheduleKind === 'timesPerWeek'
-    ? { kind: 'timesPerWeek', times: row.scheduleTimes ?? 1 }
-    : { kind: 'daysOfWeek', days: row.scheduleDays ?? 0 };
-}
-
 export async function updateHabit(id: string, input: NewHabit, now: Date): Promise<void> {
   await db
     .update(habits)
