@@ -13,6 +13,7 @@ export type NewHabit = {
   color: PaletteKey;
   schedule: Schedule;
   targetPerDay: number;
+  streakGoal: number | null;
 };
 
 /** Query viva: a home re-renderiza sozinha quando a tabela muda. */
@@ -53,7 +54,7 @@ export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow>
     scheduleDays: input.schedule.kind === 'daysOfWeek' ? input.schedule.days : null,
     scheduleTimes: input.schedule.kind === 'timesPerWeek' ? input.schedule.times : null,
     targetPerDay: input.targetPerDay,
-    streakGoal: null,
+    streakGoal: input.streakGoal,
     reminderTime: null,
     position: next,
     archivedAt: null,
@@ -84,6 +85,7 @@ export async function updateHabit(id: string, input: NewHabit, now: Date): Promi
       scheduleDays: input.schedule.kind === 'daysOfWeek' ? input.schedule.days : null,
       scheduleTimes: input.schedule.kind === 'timesPerWeek' ? input.schedule.times : null,
       targetPerDay: input.targetPerDay,
+      streakGoal: input.streakGoal,
       updatedAt: now.toISOString(),
     })
     .where(eq(habits.id, id));
@@ -126,4 +128,11 @@ export async function reorderHabits(orderedIds: string[], now: Date): Promise<vo
       await tx.update(habits).set({ position, updatedAt: timestamp }).where(eq(habits.id, id));
     }
   });
+}
+
+export async function updateStreakGoal(id: string, streakGoal: number | null, now: Date): Promise<void> {
+  await db
+    .update(habits)
+    .set({ streakGoal, updatedAt: now.toISOString() })
+    .where(eq(habits.id, id));
 }
