@@ -18,6 +18,7 @@ import {
 import type { HabitRow } from '@/data/schema';
 import { paletteKeyOf } from '@/domain/palette';
 import { ReorderList } from '@/features/settings/reorder-list';
+import { SyncCard } from '@/features/settings/sync-card';
 import { Button } from '@/ui/button';
 import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
@@ -81,6 +82,8 @@ export function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <SyncCard />
+
         <View style={styles.block}>
           <Text variant="label" tone="inkFaint">
             Ordem na home

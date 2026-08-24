@@ -402,3 +402,4 @@ Nada disso bloqueia as fatias 0–8.
 |---|---|
 | 2026-08-22 | Versão inicial, produzida por entrevista. 26 decisões fechadas. |
 | 2026-08-24 | Widget: um receiver redimensionável em vez de três entradas no seletor. Os três tamanhos viraram três layouts sobre o tamanho medido — mesma promessa, sem triplicar o seletor. |
+| 2026-08-24 | Sync: `settings` fica fora do espelho no Postgres. A virada do dia e o primeiro dia da semana são escolha deste aparelho, e a tabela nasceu sem `user_id` e sem `deleted_at` — sincronizá-la seria inventar coluna. O estado do sync é um bloco em Ajustes, como manda a 7.5, e não uma tela própria. |
