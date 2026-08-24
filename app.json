@@ -51,6 +51,31 @@
             ]
           }
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/barlow-condensed/400Regular/BarlowCondensed_400Regular.ttf",
+            "./node_modules/@expo-google-fonts/barlow-condensed/500Medium/BarlowCondensed_500Medium.ttf",
+            "./node_modules/@expo-google-fonts/barlow-condensed/600SemiBold/BarlowCondensed_600SemiBold.ttf",
+            "./node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Habito",
+              "label": "Hábito",
+              "description": "Um hábito, com a sequência e o toque que marca hoje.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
       ]
     ],
     "experiments": {
