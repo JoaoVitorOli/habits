@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { db } from '@/data/db';
+import { rescheduleReminders } from '@/data/notifications';
 import migrations from '@/data/migrations/migrations';
 import { color } from '@/ui/theme';
 
@@ -48,6 +49,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (pronto) SplashScreen.hideAsync();
   }, [pronto]);
+
+  /* o Android perde os alarmes agendados no boot: remontar na abertura e o conserto barato */
+  useEffect(() => {
+    if (bancoPronto) rescheduleReminders();
+  }, [bancoPronto]);
 
   if (!pronto) return null;
 

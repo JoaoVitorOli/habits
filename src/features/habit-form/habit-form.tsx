@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { NewHabit } from '@/data/habits';
+import { requestReminderPermission } from '@/data/notifications';
 import { ColorPicker } from '@/features/habit-form/color-picker';
 import { IconPicker } from '@/features/habit-form/icon-picker';
 import { SchedulePicker } from '@/features/habit-form/schedule-picker';
@@ -12,11 +13,13 @@ import { StreakGoalPicker } from '@/features/streak-goal/streak-goal-picker';
 import { HabitCard } from '@/features/home/habit-card';
 import { useToday } from '@/features/use-today';
 import { defaultPaletteKey, type PaletteKey } from '@/domain/palette';
+import { formatTime, parseTime } from '@/domain/reminder';
 import type { Schedule } from '@/domain/schedule';
 import { Button } from '@/ui/button';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { TextField } from '@/ui/text-field';
+import { TimePickerDialog } from '@/ui/time-picker-dialog';
 import { color, palette, radius, space } from '@/ui/theme';
 
 const NO_DAYS: ReadonlySet<string> = new Set();
@@ -28,6 +31,7 @@ export type HabitFormValues = {
   color: PaletteKey;
   schedule: Schedule;
   streakGoal: number | null;
+  reminderTime: string | null;
 };
 
 export const emptyHabitForm: HabitFormValues = {
@@ -37,6 +41,7 @@ export const emptyHabitForm: HabitFormValues = {
   color: defaultPaletteKey,
   schedule: { kind: 'daysOfWeek', days: 127 },
   streakGoal: null,
+  reminderTime: null,
 };
 
 type Props = {
@@ -57,6 +62,9 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
   const [paletteKey, setPaletteKey] = useState<PaletteKey>(initial.color);
   const [schedule, setSchedule] = useState<Schedule>(initial.schedule);
   const [streakGoal, setStreakGoal] = useState<number | null>(initial.streakGoal);
+  const [reminderTime, setReminderTime] = useState<string | null>(initial.reminderTime);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderBlocked, setReminderBlocked] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const named = name.trim().length > 0;
@@ -74,6 +82,7 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
         schedule,
         targetPerDay: 1,
         streakGoal,
+        reminderTime,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
@@ -137,6 +146,26 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
             />
           </View>
 
+          <View style={styles.group}>
+            <Text variant="label" tone="inkFaint">
+              Lembrete
+            </Text>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Escolher horário do lembrete"
+              onPress={() => setReminderOpen(true)}
+              style={styles.reminder}>
+              <Text variant="body" tone={reminderTime === null ? 'inkMuted' : 'ink'} tabular>
+                {reminderTime === null ? 'Sem lembrete' : `Todo dia agendado, às ${reminderTime}`}
+              </Text>
+            </PressableScale>
+            {reminderBlocked ? (
+              <Text variant="caption" tone="perigo">
+                Sem permissão de notificação o lembrete não toca. Ative nas configurações do Android.
+              </Text>
+            ) : null}
+          </View>
+
           {!scheduled ? (
             <Text variant="caption" tone="perigo">
               Escolha ao menos um dia da semana.
@@ -144,6 +173,23 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
           ) : null}
 
           {footer}
+
+          <TimePickerDialog
+            visible={reminderOpen}
+            value={parseTime(reminderTime)}
+            onConfirm={async (time) => {
+              setReminderOpen(false);
+              setReminderTime(formatTime(time));
+              // pede a permissao no momento em que ela passa a fazer sentido
+              setReminderBlocked(!(await requestReminderPermission()));
+            }}
+            onRemove={() => {
+              setReminderOpen(false);
+              setReminderTime(null);
+              setReminderBlocked(false);
+            }}
+            onClose={() => setReminderOpen(false)}
+          />
         </ScrollView>
 
         <View style={styles.footer}>
@@ -157,6 +203,15 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.ground },
   group: { gap: space.sm },
+  reminder: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.line,
+    backgroundColor: color.surfaceRaised,
+  },
   action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',

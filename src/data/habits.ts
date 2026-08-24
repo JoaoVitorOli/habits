@@ -2,6 +2,7 @@ import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/data/db';
 import { uuidV7 } from '@/data/id';
+import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits, type HabitRow } from '@/data/schema';
 import type { Schedule } from '@/domain/schedule';
 import type { PaletteKey } from '@/domain/palette';
@@ -14,6 +15,7 @@ export type NewHabit = {
   schedule: Schedule;
   targetPerDay: number;
   streakGoal: number | null;
+  reminderTime: string | null;
 };
 
 /** Query viva: a home re-renderiza sozinha quando a tabela muda. */
@@ -55,7 +57,7 @@ export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow>
     scheduleTimes: input.schedule.kind === 'timesPerWeek' ? input.schedule.times : null,
     targetPerDay: input.targetPerDay,
     streakGoal: input.streakGoal,
-    reminderTime: null,
+    reminderTime: input.reminderTime,
     position: next,
     archivedAt: null,
     createdAt: timestamp,
@@ -64,6 +66,7 @@ export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow>
   };
 
   await db.insert(habits).values(row);
+  await rescheduleReminders();
   return row;
 }
 
@@ -86,14 +89,18 @@ export async function updateHabit(id: string, input: NewHabit, now: Date): Promi
       scheduleTimes: input.schedule.kind === 'timesPerWeek' ? input.schedule.times : null,
       targetPerDay: input.targetPerDay,
       streakGoal: input.streakGoal,
+      reminderTime: input.reminderTime,
       updatedAt: now.toISOString(),
     })
     .where(eq(habits.id, id));
+
+  await rescheduleReminders();
 }
 
 export async function archiveHabit(id: string, now: Date): Promise<void> {
   const timestamp = now.toISOString();
   await db.update(habits).set({ archivedAt: timestamp, updatedAt: timestamp }).where(eq(habits.id, id));
+  await rescheduleReminders();
 }
 
 export async function restoreHabit(id: string, now: Date): Promise<void> {
@@ -101,6 +108,8 @@ export async function restoreHabit(id: string, now: Date): Promise<void> {
     .update(habits)
     .set({ archivedAt: null, updatedAt: now.toISOString() })
     .where(eq(habits.id, id));
+
+  await rescheduleReminders();
 }
 
 /**
@@ -117,6 +126,8 @@ export async function deleteHabit(id: string, now: Date): Promise<void> {
     await tx.update(completions).set(deleted).where(eq(completions.habitId, id));
     await tx.update(dayNotes).set(deleted).where(eq(dayNotes.habitId, id));
   });
+
+  await rescheduleReminders();
 }
 
 /** `position` sincroniza, entao reordenar reescreve a coluna inteira e nao um indice relativo. */
