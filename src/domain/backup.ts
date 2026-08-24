@@ -1,3 +1,5 @@
+import type { Versioned } from './sync';
+
 /**
  * Formato do arquivo de backup. Os tipos sao declarados aqui de novo, e nao reaproveitados
  * do schema do banco, de proposito: o arquivo e um contrato com o passado. Se o schema mudar,
@@ -52,8 +54,6 @@ export type Backup = {
   dayNotes: BackupNote[];
 };
 
-export type Versioned = { id: string; updatedAt: string };
-
 export type ParseResult = { ok: true; backup: Backup } | { ok: false; reason: string };
 
 export function buildBackup(
@@ -87,19 +87,6 @@ export function parseBackup(text: string): ParseResult {
   }
 
   return { ok: true, backup: backup as Backup };
-}
-
-/**
- * Reimportar o mesmo arquivo nao pode mudar nada: so entra linha nova ou linha mais recente
- * que a local. E a mesma regra do sync — maior `updated_at` vence, linha inteira.
- */
-export function rowsToApply<T extends Versioned>(local: T[], incoming: T[]): T[] {
-  const current = new Map(local.map((row) => [row.id, row.updatedAt]));
-
-  return incoming.filter((row) => {
-    const mine = current.get(row.id);
-    return mine === undefined || row.updatedAt > mine;
-  });
 }
 
 function isRowList(value: unknown): value is Versioned[] {

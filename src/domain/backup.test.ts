@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBackup, parseBackup, rowsToApply, type Versioned } from './backup';
+import { buildBackup, parseBackup } from './backup';
 
 const vazio = { habits: [], completions: [], dayNotes: [] };
 
@@ -39,28 +39,3 @@ describe('parseBackup', () => {
   });
 });
 
-describe('rowsToApply', () => {
-  const local: Versioned[] = [
-    { id: 'a', updatedAt: '2026-08-20T10:00:00.000Z' },
-    { id: 'b', updatedAt: '2026-08-22T10:00:00.000Z' },
-  ];
-
-  it('traz a linha que nao existe aqui', () => {
-    const nova = { id: 'c', updatedAt: '2026-08-01T10:00:00.000Z' };
-    expect(rowsToApply(local, [nova])).toEqual([nova]);
-  });
-
-  it('reimportar o mesmo arquivo nao aplica nada', () => {
-    expect(rowsToApply(local, local)).toEqual([]);
-  });
-
-  it('aplica a linha do arquivo quando ela e mais recente', () => {
-    const maisNova = { id: 'a', updatedAt: '2026-08-23T10:00:00.000Z' };
-    expect(rowsToApply(local, [maisNova])).toEqual([maisNova]);
-  });
-
-  it('mantem o local quando o local e mais recente', () => {
-    const maisVelha = { id: 'b', updatedAt: '2026-08-21T10:00:00.000Z' };
-    expect(rowsToApply(local, [maisVelha])).toEqual([]);
-  });
-});
