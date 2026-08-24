@@ -13,6 +13,13 @@ export function completionsSince(from: Day) {
     .where(and(isNull(completions.deletedAt), gte(completions.day, from)));
 }
 
+export function completionsOfHabit(habitId: string) {
+  return db
+    .select()
+    .from(completions)
+    .where(and(eq(completions.habitId, habitId), isNull(completions.deletedAt)));
+}
+
 /**
  * Uma linha por (habito, dia) com `count`. Isso torna a marcacao idempotente e da ao
  * sync uma linha canonica por dia. Ao bater a meta, o proximo toque zera.
