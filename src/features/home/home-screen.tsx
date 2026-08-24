@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import ChartColumn from 'lucide-react-native/icons/chart-column';
 import Plus from 'lucide-react-native/icons/plus';
 import Settings from 'lucide-react-native/icons/settings';
 import { useMemo } from 'react';
@@ -64,6 +65,13 @@ export function HomeScreen() {
         <Text variant="title" style={styles.title}>
           Hábitos
         </Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Visão geral"
+          onPress={() => router.push('/visao-geral')}
+          style={styles.action}>
+          <ChartColumn size={24} color={color.inkMuted} />
+        </PressableScale>
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Ajustes"

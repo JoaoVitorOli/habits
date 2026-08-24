@@ -98,7 +98,8 @@ const styles = StyleSheet.create({
   block: { gap: space.sm },
   row: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-end' },
   weekdayColumn: { gap: space.xs, paddingBottom: 0 },
-  grid: { flexDirection: 'row', gap: space.xs },
+  /* quando o conteudo cabe, o fim fica encostado a direita: a semana corrente e a ancora */
+  grid: { flexDirection: 'row', gap: space.xs, flexGrow: 1, justifyContent: 'flex-end' },
   week: { gap: space.xs },
   monthLabel: { height: 16 },
   cell: { borderRadius: radius.sm / 2, backgroundColor: color.surfaceOverlay },
