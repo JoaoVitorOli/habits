@@ -15,8 +15,8 @@ export const color = {
   inkFaint: '#5D5670',
   inkDisabled: '#3A3547',
   accent: '#6C4BF6',
-  /** escurecimento do toque: some quando o dedo sai */
-  pressScrim: 'rgba(0,0,0,0.32)',
+  /** brilho do toque: no escuro a profundidade se faz com luz, nao com preto sobre preto */
+  pressTint: 'rgba(243,241,248,0.12)',
   sucesso: '#34B978',
   perigo: '#EE5757',
 } as const;

@@ -15,7 +15,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type Props = Omit<PressableProps, 'style' | 'children'> & {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  /** desliga o escurecimento onde ele cairia num retangulo que nao e o desenho do alvo */
+  /** desliga o brilho onde ele cairia num retangulo que nao e o desenho do alvo */
   dim?: boolean;
 };
 
@@ -35,7 +35,7 @@ export function PressableScale({ style, disabled, dim = true, children, ...rest 
       : { transform: [{ scale: 1 - 0.03 * value }] };
   });
 
-  const scrim = useAnimatedStyle(() => ({ opacity: pressed.get() }));
+  const tint = useAnimatedStyle(() => ({ opacity: pressed.get() }));
 
   const timing = { duration: duration.press, easing: EASE_OUT, reduceMotion: ReduceMotion.System };
 
@@ -58,9 +58,9 @@ export function PressableScale({ style, disabled, dim = true, children, ...rest 
         <Animated.View
           pointerEvents="none"
           style={[
-            styles.scrim,
-            { borderRadius: shape?.borderRadius ?? 0, backgroundColor: color.pressScrim },
-            scrim,
+            styles.tint,
+            { borderRadius: shape?.borderRadius ?? 0, backgroundColor: color.pressTint },
+            tint,
           ]}
         />
       ) : null}
@@ -70,5 +70,5 @@ export function PressableScale({ style, disabled, dim = true, children, ...rest 
 }
 
 const styles = StyleSheet.create({
-  scrim: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  tint: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
 });
