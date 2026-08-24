@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { addDays, daysBetween, logicalDay, startOfWeek, toDay, weekdayOf } from './calendar';
+import {
+  addDays,
+  addMonths,
+  daysBetween,
+  endOfMonth,
+  logicalDay,
+  monthOf,
+  startOfWeek,
+  toDay,
+  weekdayOf,
+} from './calendar';
 
 describe('toDay', () => {
   it('formata a data local, nao a UTC', () => {
@@ -82,5 +92,25 @@ describe('startOfWeek', () => {
 
   it('com semana comecando na segunda, o domingo pertence a semana anterior', () => {
     expect(startOfWeek('2026-08-23', 1)).toBe('2026-08-17');
+  });
+});
+
+describe('mes', () => {
+  it('o mes de um dia sao os sete primeiros caracteres', () => {
+    expect(monthOf('2026-08-24')).toBe('2026-08');
+  });
+
+  it('o ultimo dia de agosto e 31 e o de fevereiro bissexto e 29', () => {
+    expect(endOfMonth('2026-08')).toBe('2026-08-31');
+    expect(endOfMonth('2028-02')).toBe('2028-02-29');
+  });
+
+  it('andar de mes atravessa a virada do ano', () => {
+    expect(addMonths('2026-12', 1)).toBe('2027-01');
+    expect(addMonths('2026-01', -1)).toBe('2025-12');
+  });
+
+  it('andar de mes nao escorrega quando o mes de destino e mais curto', () => {
+    expect(addMonths('2026-01', 1)).toBe('2026-02');
   });
 });

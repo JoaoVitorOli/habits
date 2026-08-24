@@ -44,3 +44,25 @@ export function startOfWeek(day: Day, weekStartsOn: number): Day {
   const offset = (weekdayOf(day) - weekStartsOn + 7) % 7;
   return addDays(day, -offset);
 }
+
+/** Mes e a string `YYYY-MM`, pela mesma razao que o dia e string: comparacao sem fuso. */
+export type Month = string;
+
+export function monthOf(day: Day): Month {
+  return day.slice(0, 7);
+}
+
+export function startOfMonth(month: Month): Day {
+  return `${month}-01`;
+}
+
+export function endOfMonth(month: Month): Day {
+  const [year, index] = month.split('-').map(Number);
+  return toDay(new Date(year, index, 0, 12));
+}
+
+export function addMonths(month: Month, delta: number): Month {
+  const [year, index] = month.split('-').map(Number);
+  const date = new Date(year, index - 1 + delta, 1, 12);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+}
