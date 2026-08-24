@@ -15,6 +15,8 @@ export const color = {
   inkFaint: '#5D5670',
   inkDisabled: '#3A3547',
   accent: '#6C4BF6',
+  /** sombra preta so sob o que flutua de verdade: sheet, menu, FAB */
+  shadow: '#000000',
   /** brilho do toque: no escuro a profundidade se faz com luz, nao com preto sobre preto */
   pressTint: 'rgba(243,241,248,0.12)',
   sucesso: '#34B978',

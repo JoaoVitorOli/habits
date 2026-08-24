@@ -7,7 +7,7 @@ import { color, radius, space } from '@/ui/theme';
 type Props = {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'ghost';
+  variant?: 'primary' | 'ghost' | 'perigo';
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -15,6 +15,7 @@ type Props = {
 
 export function Button({ label, onPress, variant = 'primary', disabled, loading, style }: Props) {
   const inert = disabled || loading;
+  const variantStyle = { primary: styles.primary, ghost: styles.ghost, perigo: styles.perigo };
 
   return (
     <PressableScale
@@ -24,7 +25,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       onPress={onPress}
       style={[
         styles.base,
-        variant === 'primary' ? styles.primary : styles.ghost,
+        variantStyle[variant],
         disabled ? styles.disabled : null,
         style ?? null,
       ]}>
@@ -50,6 +51,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primary: { backgroundColor: color.accent },
+  perigo: { backgroundColor: color.perigo },
   ghost: { backgroundColor: color.surfaceRaised, borderWidth: 1, borderColor: color.line },
   disabled: { backgroundColor: color.surfaceRaised, opacity: 0.6 },
   hidden: { opacity: 0 },
