@@ -5,16 +5,19 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 
 import { addDays, weekdayOf, type Day } from '@/domain/calendar';
+import type { PaletteKey } from '@/domain/palette';
 import type { Schedule } from '@/domain/schedule';
 import { streakUnit } from '@/domain/streak';
 import { MarkButton } from '@/features/home/mark-button';
 import { Icon, type IconRef } from '@/ui/icon';
 import { Text } from '@/ui/text';
-import { color, palette, radius, space, withOpacity, type PaletteKey } from '@/ui/theme';
+import { color, palette, radius, space, withOpacity } from '@/ui/theme';
 import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 
 export type HabitCardModel = {
@@ -113,20 +116,25 @@ export function HabitCard({ habit, today, onToggleToday }: Props) {
 /** So a bolinha de hoje anima: as outras 97 sao View comum, e ninguem sente falta. */
 function TodayCell({ done, size, accent }: { done: boolean; size: number; accent: string }) {
   const progress = useSharedValue(done ? 1 : 0);
+  const pulse = useSharedValue(1);
 
   useEffect(() => {
     progress.set(
       withSpring(done ? 1 : 0, { duration: 400, dampingRatio: 0.8, reduceMotion: ReduceMotion.System }),
     );
-  }, [done, progress]);
+    // o crescimento e um pulso, nao um estado: uma bolinha maior para sempre mentiria sobre o grid
+    pulse.set(
+      withSequence(
+        withTiming(done ? 1.35 : 0.85, { duration: 120, reduceMotion: ReduceMotion.System }),
+        withSpring(1, { duration: 400, dampingRatio: 0.7, reduceMotion: ReduceMotion.System }),
+      ),
+    );
+  }, [done, progress, pulse]);
 
-  const animated = useAnimatedStyle(() => {
-    const value = progress.get();
-    return {
-      backgroundColor: interpolateColor(value, [0, 1], [color.surfaceOverlay, accent]),
-      transform: [{ scale: 1 + 0.35 * value }],
-    };
-  });
+  const animated = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.get(), [0, 1], [color.surfaceOverlay, accent]),
+    transform: [{ scale: pulse.get() }],
+  }));
 
   return <Animated.View style={[styles.cell, { width: size, height: size }, animated]} />;
 }

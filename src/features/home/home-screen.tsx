@@ -10,13 +10,14 @@ import { completionsSince, toggleCompletion } from '@/data/completions';
 import { activeHabitsQuery, scheduleOf } from '@/data/habits';
 import type { HabitRow } from '@/data/schema';
 import { addDays, type Day } from '@/domain/calendar';
+import { paletteKeyOf } from '@/domain/palette';
 import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
 import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
-import { color, radius, space, withOpacity, type PaletteKey } from '@/ui/theme';
+import { color, radius, space, withOpacity } from '@/ui/theme';
 import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 
 /** Tablet ganha coluna, nao ganha tamanho. */
@@ -73,23 +74,28 @@ export function HomeScreen() {
 
               return (
                 <View key={habit.id} style={[styles.column, { width: `${100 / total}%` }]}>
-                  <HabitCard
-                    today={today}
-                    onToggleToday={() => toggleToday(habit)}
-                    habit={{
-                      name: habit.name,
-                      icon: habit.icon,
-                      color: habit.color as PaletteKey,
-                      schedule,
-                      completedDays,
-                      currentStreak: currentStreak({
+                  <PressableScale
+                    accessibilityRole="button"
+                    accessibilityLabel={`Abrir ${habit.name}`}
+                    onPress={() => router.push({ pathname: '/habito/[id]', params: { id: habit.id } })}>
+                    <HabitCard
+                      today={today}
+                      onToggleToday={() => toggleToday(habit)}
+                      habit={{
+                        name: habit.name,
+                        icon: habit.icon,
+                        color: paletteKeyOf(habit.color),
                         schedule,
                         completedDays,
-                        today,
-                        weekStartsOn: DEFAULT_WEEK_STARTS_ON,
-                      }),
-                    }}
-                  />
+                        currentStreak: currentStreak({
+                          schedule,
+                          completedDays,
+                          today,
+                          weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+                        }),
+                      }}
+                    />
+                  </PressableScale>
                 </View>
               );
             })}
