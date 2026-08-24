@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { addDays, daysBetween, logicalDay, toDay, weekdayOf } from './calendar';
+import { addDays, daysBetween, logicalDay, startOfWeek, toDay, weekdayOf } from './calendar';
 
 describe('toDay', () => {
   it('formata a data local, nao a UTC', () => {
@@ -67,5 +67,20 @@ describe('daysBetween', () => {
 
   it('e negativo quando o fim vem antes do inicio', () => {
     expect(daysBetween('2026-09-02', '2026-08-24')).toBe(-9);
+  });
+});
+
+describe('startOfWeek', () => {
+  it('com semana comecando no domingo, a segunda cai na semana do dia 23', () => {
+    // 23/08/2026 e domingo, 24/08 e segunda
+    expect(startOfWeek('2026-08-24', 0)).toBe('2026-08-23');
+  });
+
+  it('o proprio domingo e o inicio da sua semana', () => {
+    expect(startOfWeek('2026-08-23', 0)).toBe('2026-08-23');
+  });
+
+  it('com semana comecando na segunda, o domingo pertence a semana anterior', () => {
+    expect(startOfWeek('2026-08-23', 1)).toBe('2026-08-17');
   });
 });

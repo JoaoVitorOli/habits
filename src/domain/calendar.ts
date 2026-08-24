@@ -39,3 +39,8 @@ export function weekdayOf(day: Day): number {
 export function daysBetween(from: Day, to: Day): number {
   return Math.round((noonOf(to).getTime() - noonOf(from).getTime()) / MS_PER_DAY);
 }
+
+export function startOfWeek(day: Day, weekStartsOn: number): Day {
+  const offset = (weekdayOf(day) - weekStartsOn + 7) % 7;
+  return addDays(day, -offset);
+}
