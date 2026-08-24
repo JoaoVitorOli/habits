@@ -5,7 +5,7 @@
  */
 import { addDays, type Day } from './calendar';
 import type { Schedule } from './schedule';
-import { currentStreak } from './streak';
+import { currentStreak, streakUnit } from './streak';
 
 export const SNAPSHOT_VERSION = 1;
 
@@ -19,6 +19,8 @@ export type SnapshotHabit = {
   color: string;
   targetPerDay: number;
   currentStreak: number;
+  /** o compromisso de `timesPerWeek` e semanal: a sequencia dele conta semanas, nao dias */
+  streakUnit: 'dias' | 'semanas';
   /** so os dias marcados dentro da janela: `{ '2026-08-24': 1 }` */
   days: Record<Day, number>;
 };
@@ -82,6 +84,7 @@ export function buildSnapshot({
         color: habit.color,
         targetPerDay: habit.targetPerDay,
         currentStreak: currentStreak({ schedule: habit.schedule, completedDays, today, weekStartsOn }),
+        streakUnit: streakUnit(habit.schedule),
         days,
       };
     }),

@@ -70,6 +70,7 @@ describe('buildSnapshot', () => {
     });
 
     expect(snapshot.habits[0].currentStreak).toBe(24);
+    expect(snapshot.habits[0].streakUnit).toBe('dias');
   });
 
   it('dia so conta para a sequencia quando bate a meta do proprio habito', () => {
@@ -98,8 +99,29 @@ const agua: SnapshotHabit = {
   color: 'azul',
   targetPerDay: 3,
   currentStreak: 4,
+  streakUnit: 'dias',
   days: { '2026-08-24': 2 },
 };
+
+describe('buildSnapshot, por semana', () => {
+  it('a sequencia de um habito de N por semana conta semanas', () => {
+    const snapshot = buildSnapshot({
+      habits: [{ ...treino, schedule: { kind: 'timesPerWeek', times: 2 } }],
+      completions: [
+        { habitId: 'h1', day: '2026-08-23', count: 1 },
+        { habitId: 'h1', day: '2026-08-24', count: 1 },
+        { habitId: 'h1', day: '2026-08-18', count: 1 },
+        { habitId: 'h1', day: '2026-08-19', count: 1 },
+      ],
+      today: '2026-08-24',
+      weekStartsOn: 0,
+      generatedAt: gerado,
+    });
+
+    expect(snapshot.habits[0].streakUnit).toBe('semanas');
+    expect(snapshot.habits[0].currentStreak).toBe(2);
+  });
+});
 
 describe('isDone', () => {
   it('so esta feito quando a contagem alcanca a meta do dia', () => {
