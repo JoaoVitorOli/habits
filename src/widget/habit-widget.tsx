@@ -1,3 +1,11 @@
+/**
+ * O React Compiler transforma componente em funcao com cache de hooks, e esta biblioteca
+ * chama estes componentes na mao para montar a arvore do RemoteViews — o cache vira
+ * "Invalid Hook Call". O arquivo inteiro fica fora do compiler; nao ha o que memorizar aqui,
+ * porque nada disso roda numa arvore React de verdade.
+ */
+'use no memo';
+
 import {
   FlexWidget,
   SvgWidget,
