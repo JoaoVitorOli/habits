@@ -66,3 +66,20 @@ export function addMonths(month: Month, delta: number): Month {
   const date = new Date(year, index - 1 + delta, 1, 12);
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
+
+/**
+ * As grades do app (card da home, widget) sao colunas de uma semana, da mais antiga para a
+ * mais nova, terminando na semana de hoje. A ultima coluna passa de hoje: sao os dias que
+ * ainda vao acontecer.
+ */
+export function weekColumns(today: Day, weeks: number, weekStartsOn: number): Day[][] {
+  const lastColumn = startOfWeek(today, weekStartsOn);
+  const columns: Day[][] = [];
+
+  for (let back = weeks - 1; back >= 0; back--) {
+    const start = addDays(lastColumn, -back * 7);
+    columns.push(Array.from({ length: 7 }, (_, offset) => addDays(start, offset)));
+  }
+
+  return columns;
+}

@@ -9,6 +9,7 @@ import {
   monthOf,
   startOfWeek,
   toDay,
+  weekColumns,
   weekdayOf,
 } from './calendar';
 
@@ -112,5 +113,27 @@ describe('mes', () => {
 
   it('andar de mes nao escorrega quando o mes de destino e mais curto', () => {
     expect(addMonths('2026-01', 1)).toBe('2026-02');
+  });
+});
+
+describe('weekColumns', () => {
+  it('termina na semana de hoje e vai da mais antiga para a mais nova', () => {
+    // 24/08/2026 e uma segunda; com a semana comecando no domingo, a coluna dela abre em 23/08
+    const columns = weekColumns('2026-08-24', 3, 0);
+
+    expect(columns.map((week) => week[0])).toEqual(['2026-08-09', '2026-08-16', '2026-08-23']);
+    expect(columns[2]).toEqual([
+      '2026-08-23',
+      '2026-08-24',
+      '2026-08-25',
+      '2026-08-26',
+      '2026-08-27',
+      '2026-08-28',
+      '2026-08-29',
+    ]);
+  });
+
+  it('respeita o inicio de semana na segunda-feira', () => {
+    expect(weekColumns('2026-08-24', 1, 1)[0][0]).toBe('2026-08-24');
   });
 });

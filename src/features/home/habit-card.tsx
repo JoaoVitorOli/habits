@@ -10,12 +10,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { addDays, weekdayOf, type Day } from '@/domain/calendar';
+import { weekColumns, type Day } from '@/domain/calendar';
 import type { PaletteKey } from '@/domain/palette';
 import type { Schedule } from '@/domain/schedule';
 import { streakUnit } from '@/domain/streak';
 import { MarkButton } from '@/features/home/mark-button';
 import { streakLabel } from '@/features/streak-label';
+import { DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
 import { Icon, type IconRef } from '@/ui/icon';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
@@ -34,18 +35,6 @@ export type HabitCardModel = {
 const cellSize: Record<Breakpoint, number> = { compact: 10, medium: 12, expanded: 14 };
 
 export const GRID_WEEKS = 14;
-
-function gridDays(today: Day): Day[][] {
-  const lastColumnStart = addDays(today, -weekdayOf(today));
-  const weeks: Day[][] = [];
-
-  for (let week = GRID_WEEKS - 1; week >= 0; week--) {
-    const start = addDays(lastColumnStart, -week * 7);
-    weeks.push(Array.from({ length: 7 }, (_, weekday) => addDays(start, weekday)));
-  }
-
-  return weeks;
-}
 
 type Props = {
   habit: HabitCardModel;
@@ -86,7 +75,7 @@ export function HabitCard({ habit, today, onToggleToday }: Props) {
 
       {/* o grid do card e so leitura: marcar acontece no botao e na tela de detalhe */}
       <View style={styles.grid} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {gridDays(today).map((week) => (
+        {weekColumns(today, GRID_WEEKS, DEFAULT_WEEK_STARTS_ON).map((week) => (
           <View key={week[0]} style={styles.week}>
             {week.map((day) =>
               day === today ? (
