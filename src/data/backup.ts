@@ -5,6 +5,7 @@ import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits } from '@/data/schema';
 import { buildBackup, parseBackup, rowsToApply, type Backup } from '@/domain/backup';
+import { refreshWidgets } from '@/widget/refresh';
 
 export type ImportSummary = {
   habits: number;
@@ -68,5 +69,6 @@ export async function importBackup(): Promise<ImportSummary | null> {
   });
 
   await rescheduleReminders();
+  refreshWidgets();
   return summary;
 }

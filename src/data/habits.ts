@@ -6,6 +6,7 @@ import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits, type HabitRow } from '@/data/schema';
 import type { Schedule } from '@/domain/schedule';
 import type { PaletteKey } from '@/domain/palette';
+import { refreshWidgets } from '@/widget/refresh';
 
 export type NewHabit = {
   name: string;
@@ -67,6 +68,7 @@ export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow>
 
   await db.insert(habits).values(row);
   await rescheduleReminders();
+  refreshWidgets();
   return row;
 }
 
@@ -89,12 +91,14 @@ export async function updateHabit(id: string, input: NewHabit, now: Date): Promi
     .where(eq(habits.id, id));
 
   await rescheduleReminders();
+  refreshWidgets();
 }
 
 export async function archiveHabit(id: string, now: Date): Promise<void> {
   const timestamp = now.toISOString();
   await db.update(habits).set({ archivedAt: timestamp, updatedAt: timestamp }).where(eq(habits.id, id));
   await rescheduleReminders();
+  refreshWidgets();
 }
 
 export async function restoreHabit(id: string, now: Date): Promise<void> {
@@ -104,6 +108,7 @@ export async function restoreHabit(id: string, now: Date): Promise<void> {
     .where(eq(habits.id, id));
 
   await rescheduleReminders();
+  refreshWidgets();
 }
 
 /**
@@ -122,6 +127,7 @@ export async function deleteHabit(id: string, now: Date): Promise<void> {
   });
 
   await rescheduleReminders();
+  refreshWidgets();
 }
 
 /** `position` sincroniza, entao reordenar reescreve a coluna inteira e nao um indice relativo. */

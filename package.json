@@ -1,6 +1,6 @@
 {
   "name": "habits",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",

@@ -18,6 +18,7 @@ import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import migrations from '@/data/migrations/migrations';
 import { color } from '@/ui/theme';
+import { useWidgetRefresh } from '@/widget/refresh';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -54,6 +55,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (bancoPronto) rescheduleReminders();
   }, [bancoPronto]);
+
+  useWidgetRefresh(bancoPronto);
 
   if (!pronto) return null;
 

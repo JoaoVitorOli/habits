@@ -4,6 +4,7 @@ import { db } from '@/data/db';
 import { uuidV7 } from '@/data/id';
 import { completions, type HabitRow } from '@/data/schema';
 import type { Day } from '@/domain/calendar';
+import { refreshWidgets } from '@/widget/refresh';
 
 /** Query viva da janela que a home desenha. */
 export function completionsSince(from: Day) {
@@ -41,6 +42,7 @@ export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Pr
       updatedAt: timestamp,
       deletedAt: null,
     });
+    refreshWidgets();
     return;
   }
 
@@ -50,4 +52,6 @@ export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Pr
     .update(completions)
     .set({ count, completedAt: timestamp, updatedAt: timestamp, deletedAt: null })
     .where(eq(completions.id, existing.id));
+
+  refreshWidgets();
 }
