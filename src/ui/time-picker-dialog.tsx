@@ -98,6 +98,12 @@ function Wheel({ label, values, value, onChange }: WheelProps) {
   const scroller = useRef<ScrollView>(null);
   const start = useRef(values.indexOf(value));
 
+  function settle(offset: number) {
+    const index = Math.round(offset / ITEM);
+    const next = values[Math.min(values.length - 1, Math.max(0, index))];
+    if (next !== value) onChange(next);
+  }
+
   useEffect(() => {
     scroller.current?.scrollTo({ y: Math.max(0, start.current) * ITEM, animated: false });
   }, []);
@@ -111,12 +117,10 @@ function Wheel({ label, values, value, onChange }: WheelProps) {
       snapToInterval={ITEM}
       decelerationRate="fast"
       contentContainerStyle={styles.wheelContent}
-      /* nada de setState por frame de rolagem: so quando o giro para */
-      onMomentumScrollEnd={(event) => {
-        const index = Math.round(event.nativeEvent.contentOffset.y / ITEM);
-        const next = values[Math.min(values.length - 1, Math.max(0, index))];
-        if (next !== value) onChange(next);
-      }}>
+      /* nada de setState por frame de rolagem: so quando o giro para. Arrastar devagar
+         nao gera momento e o onMomentumScrollEnd nunca chega, entao o fim do arrasto conta. */
+      onScrollEndDrag={(event) => settle(event.nativeEvent.contentOffset.y)}
+      onMomentumScrollEnd={(event) => settle(event.nativeEvent.contentOffset.y)}>
       {values.map((option) => (
         <View key={option} style={styles.option}>
           <Text variant="heading" tone={option === value ? 'ink' : 'inkFaint'} tabular>

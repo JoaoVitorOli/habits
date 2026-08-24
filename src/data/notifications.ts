@@ -15,8 +15,8 @@ async function ensureChannel(): Promise<void> {
 
   await Notifications.setNotificationChannelAsync(CHANNEL, {
     name: 'Lembretes',
+    // sem `sound`: 'default' seria tratado como nome de arquivo de som custom
     importance: Notifications.AndroidImportance.DEFAULT,
-    sound: 'default',
   });
 }
 
