@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Schedule } from './schedule';
-import { currentStreak, recordStreak } from './streak';
+import { currentStreak, goalProgress, recordStreak } from './streak';
 
 /* 2026-08: dom 23, seg 24, ter 25, qua 26 ... O passado usado aqui:
    seg 17, qua 19, sex 21, dom 23, seg 24. */
@@ -150,5 +150,23 @@ describe('recordStreak', () => {
       weekStartsOn: 0,
     });
     expect(record).toBe(2);
+  });
+});
+
+describe('goalProgress', () => {
+  it('e a fracao da meta ja cumprida', () => {
+    expect(goalProgress(15, 30)).toBeCloseTo(0.5);
+  });
+
+  it('nao passa de 100% quando a sequencia supera a meta', () => {
+    expect(goalProgress(40, 30)).toBe(1);
+  });
+
+  it('sem meta nao ha progresso a mostrar', () => {
+    expect(goalProgress(10, null)).toBe(null);
+  });
+
+  it('meta zero ou negativa nao vira divisao estranha', () => {
+    expect(goalProgress(10, 0)).toBe(null);
   });
 });

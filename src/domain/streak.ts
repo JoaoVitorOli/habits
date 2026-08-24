@@ -14,6 +14,12 @@ export function streakUnit(schedule: Schedule): 'dias' | 'semanas' {
   return schedule.kind === 'timesPerWeek' ? 'semanas' : 'dias';
 }
 
+/** Progresso da meta de sequencia, de 0 a 1. Sem meta nao ha barra para desenhar. */
+export function goalProgress(current: number, goal: number | null): number | null {
+  if (goal === null || goal <= 0) return null;
+  return Math.min(1, current / goal);
+}
+
 export function currentStreak(input: StreakInput): number {
   const first = earliestOf(input.completedDays);
   if (first === null) return 0;
