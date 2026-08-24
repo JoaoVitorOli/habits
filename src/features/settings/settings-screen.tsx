@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import RotateCcw from 'lucide-react-native/icons/rotate-ccw';
 import Trash2 from 'lucide-react-native/icons/trash-2';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -16,6 +17,7 @@ import {
 import type { HabitRow } from '@/data/schema';
 import { paletteKeyOf } from '@/domain/palette';
 import { ReorderList } from '@/features/settings/reorder-list';
+import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
@@ -25,21 +27,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const { data: active } = useLiveQuery(activeHabitsQuery);
   const { data: archived } = useLiveQuery(archivedHabitsQuery);
-
-  function confirmDelete(habit: HabitRow) {
-    Alert.alert(
-      `Excluir ${habit.name}?`,
-      'O histórico de marcações desse hábito vai junto. Não dá para desfazer.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => deleteHabit(habit.id, new Date()),
-        },
-      ],
-    );
-  }
+  const [pendingDelete, setPendingDelete] = useState<HabitRow | null>(null);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
@@ -111,7 +99,7 @@ export function SettingsScreen() {
                   <PressableScale
                     accessibilityRole="button"
                     accessibilityLabel={`Excluir ${habit.name}`}
-                    onPress={() => confirmDelete(habit)}
+                    onPress={() => setPendingDelete(habit)}
                     style={styles.action}>
                     <Trash2 size={22} color={color.perigo} />
                   </PressableScale>
@@ -121,6 +109,18 @@ export function SettingsScreen() {
           )}
         </View>
       </ScrollView>
+
+      <ConfirmDialog
+        visible={pendingDelete !== null}
+        destructive
+        title={`Excluir ${pendingDelete?.name ?? ''}?`}
+        message="O histórico de marcações desse hábito vai junto. Não dá para desfazer."
+        confirmLabel="Excluir"
+        onConfirm={() => {
+          if (pendingDelete) deleteHabit(pendingDelete.id, new Date());
+        }}
+        onClose={() => setPendingDelete(null)}
+      />
     </SafeAreaView>
   );
 }

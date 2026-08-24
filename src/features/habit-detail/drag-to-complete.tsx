@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   ReduceMotion,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -38,6 +39,16 @@ export function DragToComplete({ done, accent, onCommit }: Props) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onCommit();
   }
+
+  /* o arraste avisa no dedo quando ja deu: soltar aqui completa */
+  useAnimatedReaction(
+    () => travel > 0 && offset.get() >= travel * COMMIT,
+    (reached, previous) => {
+      if (previous !== null && reached !== previous && reached) {
+        scheduleOnRN(Haptics.selectionAsync);
+      }
+    },
+  );
 
   const pan = Gesture.Pan()
     .enabled(travel > 0)

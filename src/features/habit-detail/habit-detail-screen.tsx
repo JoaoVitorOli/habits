@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import Archive from 'lucide-react-native/icons/archive';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import Pencil from 'lucide-react-native/icons/pencil';
+import Settings from 'lucide-react-native/icons/settings';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
 import { archiveHabit, habitByIdQuery, scheduleOf } from '@/data/habits';
@@ -19,13 +20,18 @@ import { Heatmap } from '@/features/habit-detail/heatmap';
 import { MonthCalendar } from '@/features/habit-detail/month-calendar';
 import { StreakCard } from '@/features/habit-detail/streak-card';
 import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
+import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
+import { Menu } from '@/ui/menu';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
 import { useBreakpoint } from '@/ui/use-breakpoint';
 
 const WEEKDAY_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+
+/** altura do cabecalho: o menu nasce colado abaixo dele */
+const HEADER_HEIGHT = 64;
 
 function scheduleLabel(schedule: Schedule): string {
   if (schedule.kind === 'timesPerWeek') {
@@ -43,6 +49,9 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const today = useToday();
   const breakpoint = useBreakpoint();
   const [month, setMonth] = useState(() => monthOf(today));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const { data: found } = useLiveQuery(habitByIdQuery(id), [id]);
   const { data: completions } = useLiveQuery(completionsOfHabit(id), [id]);
@@ -68,23 +77,10 @@ export function HabitDetailScreen({ id }: { id: string }) {
 
   const toggle = (day: Day) => toggleCompletion(habit, day, new Date());
 
-  function confirmArchive() {
+  async function archive() {
     if (!habit) return;
-
-    Alert.alert(
-      `Arquivar ${habit.name}?`,
-      'Ele sai da home e para de contar sequência. O histórico fica guardado e dá para restaurar em Ajustes.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Arquivar',
-          onPress: async () => {
-            await archiveHabit(habit.id, new Date());
-            router.dismissTo('/');
-          },
-        },
-      ],
-    );
+    await archiveHabit(habit.id, new Date());
+    router.dismissTo('/');
   }
 
   const left = (
@@ -147,19 +143,39 @@ export function HabitDetailScreen({ id }: { id: string }) {
         </Text>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="Editar hábito"
-          onPress={() => router.push({ pathname: '/habito/editar/[id]', params: { id: habit.id } })}
+          accessibilityLabel="Opções do hábito"
+          onPress={() => setMenuOpen(true)}
           style={styles.action}>
-          <Pencil size={22} color={color.inkMuted} />
-        </PressableScale>
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel="Arquivar hábito"
-          onPress={confirmArchive}
-          style={styles.action}>
-          <Archive size={22} color={color.inkMuted} />
+          <Settings size={22} color={color.inkMuted} />
         </PressableScale>
       </View>
+
+      <Menu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        top={insets.top + HEADER_HEIGHT}
+        items={[
+          {
+            label: 'Editar hábito',
+            icon: <Pencil size={20} color={color.inkMuted} />,
+            onPress: () => router.push({ pathname: '/habito/editar/[id]', params: { id: habit.id } }),
+          },
+          {
+            label: 'Arquivar hábito',
+            icon: <Archive size={20} color={color.inkMuted} />,
+            onPress: () => setArchiveOpen(true),
+          },
+        ]}
+      />
+
+      <ConfirmDialog
+        visible={archiveOpen}
+        title={`Arquivar ${habit.name}?`}
+        message="Ele sai da home e para de contar sequência. O histórico fica guardado e dá para restaurar em Ajustes."
+        confirmLabel="Arquivar"
+        onConfirm={archive}
+        onClose={() => setArchiveOpen(false)}
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={wide ? styles.wide : styles.narrow}>
@@ -199,12 +215,5 @@ const styles = StyleSheet.create({
   column: { gap: space.lg },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: { borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: space.sm },
-  footer: {
-    paddingHorizontal: space.lg,
-    paddingTop: space.sm,
-    paddingBottom: space.md,
-    borderTopWidth: 1,
-    borderTopColor: color.line,
-    backgroundColor: color.surface,
-  },
+  footer: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md },
 });
