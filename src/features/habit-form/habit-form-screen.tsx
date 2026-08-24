@@ -76,6 +76,7 @@ export function HabitFormScreen() {
               name: name.trim() || 'Seu hábito',
               icon,
               color: paletteKey,
+              schedule,
               currentStreak: 0,
               completedDays: NO_DAYS,
             }}

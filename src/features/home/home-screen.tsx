@@ -1,13 +1,19 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { activeHabitsQuery } from '@/data/habits';
-import { HabitCard } from '@/features/home/habit-card';
+import { completionsSince, toggleCompletion } from '@/data/completions';
+import { activeHabitsQuery, scheduleOf } from '@/data/habits';
+import type { HabitRow } from '@/data/schema';
+import { addDays, type Day } from '@/domain/calendar';
+import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
-import { useToday } from '@/features/use-today';
+import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
+import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, radius, space, withOpacity, type PaletteKey } from '@/ui/theme';
@@ -16,16 +22,39 @@ import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 /** Tablet ganha coluna, nao ganha tamanho. */
 const columns: Record<Breakpoint, number> = { compact: 1, medium: 2, expanded: 3 };
 
-const NO_DAYS: ReadonlySet<string> = new Set();
+const NO_DAYS: ReadonlySet<Day> = new Set();
 
 export function HomeScreen() {
   const router = useRouter();
   const today = useToday();
   const breakpoint = useBreakpoint();
+
+  const windowStart = addDays(today, -(GRID_WEEKS + 1) * 7);
   const { data: habits } = useLiveQuery(activeHabitsQuery);
+  const { data: completions } = useLiveQuery(completionsSince(windowStart), [windowStart]);
+
+  /* uma linha por (habito, dia): completo e `count >= targetPerDay` do proprio habito */
+  const completedByHabit = useMemo(() => {
+    const target = new Map(habits.map((habit) => [habit.id, habit.targetPerDay]));
+    const byHabit = new Map<string, Set<Day>>();
+
+    for (const completion of completions) {
+      if (completion.count < (target.get(completion.habitId) ?? 1)) continue;
+      const days = byHabit.get(completion.habitId) ?? new Set<Day>();
+      days.add(completion.day);
+      byHabit.set(completion.habitId, days);
+    }
+
+    return byHabit;
+  }, [habits, completions]);
 
   const total = columns[breakpoint];
   const openForm = () => router.push('/habito/novo');
+
+  function toggleToday(habit: HabitRow) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleCompletion(habit, today, new Date());
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
@@ -38,20 +67,32 @@ export function HomeScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           <View style={styles.columns}>
-            {habits.map((habit) => (
-              <View key={habit.id} style={[styles.column, { width: `${100 / total}%` }]}>
-                <HabitCard
-                  today={today}
-                  habit={{
-                    name: habit.name,
-                    icon: habit.icon,
-                    color: habit.color as PaletteKey,
-                    currentStreak: 0,
-                    completedDays: NO_DAYS,
-                  }}
-                />
-              </View>
-            ))}
+            {habits.map((habit) => {
+              const schedule = scheduleOf(habit);
+              const completedDays = completedByHabit.get(habit.id) ?? NO_DAYS;
+
+              return (
+                <View key={habit.id} style={[styles.column, { width: `${100 / total}%` }]}>
+                  <HabitCard
+                    today={today}
+                    onToggleToday={() => toggleToday(habit)}
+                    habit={{
+                      name: habit.name,
+                      icon: habit.icon,
+                      color: habit.color as PaletteKey,
+                      schedule,
+                      completedDays,
+                      currentStreak: currentStreak({
+                        schedule,
+                        completedDays,
+                        today,
+                        weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+                      }),
+                    }}
+                  />
+                </View>
+              );
+            })}
           </View>
         </ScrollView>
       )}

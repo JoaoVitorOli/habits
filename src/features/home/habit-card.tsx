@@ -1,6 +1,17 @@
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  ReduceMotion,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { addDays, weekdayOf, type Day } from '@/domain/calendar';
+import type { Schedule } from '@/domain/schedule';
+import { streakUnit } from '@/domain/streak';
+import { MarkButton } from '@/features/home/mark-button';
 import { Icon, type IconRef } from '@/ui/icon';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity, type PaletteKey } from '@/ui/theme';
@@ -10,6 +21,7 @@ export type HabitCardModel = {
   name: string;
   icon: IconRef;
   color: PaletteKey;
+  schedule: Schedule;
   currentStreak: number;
   completedDays: ReadonlySet<Day>;
 };
@@ -17,13 +29,13 @@ export type HabitCardModel = {
 /** Celula do grid cresce em degraus fixos, nunca por escala continua sobre a largura. */
 const cellSize: Record<Breakpoint, number> = { compact: 10, medium: 12, expanded: 14 };
 
-const WEEKS = 14;
+export const GRID_WEEKS = 14;
 
 function gridDays(today: Day): Day[][] {
   const lastColumnStart = addDays(today, -weekdayOf(today));
   const weeks: Day[][] = [];
 
-  for (let week = WEEKS - 1; week >= 0; week--) {
+  for (let week = GRID_WEEKS - 1; week >= 0; week--) {
     const start = addDays(lastColumnStart, -week * 7);
     weeks.push(Array.from({ length: 7 }, (_, weekday) => addDays(start, weekday)));
   }
@@ -34,12 +46,15 @@ function gridDays(today: Day): Day[][] {
 type Props = {
   habit: HabitCardModel;
   today: Day;
+  onToggleToday?: () => void;
 };
 
-export function HabitCard({ habit, today }: Props) {
+export function HabitCard({ habit, today, onToggleToday }: Props) {
   const breakpoint = useBreakpoint();
   const accent = palette[habit.color];
   const size = cellSize[breakpoint];
+  const doneToday = habit.completedDays.has(today);
+  const unit = streakUnit(habit.schedule);
 
   return (
     <View style={styles.card}>
@@ -52,34 +67,68 @@ export function HabitCard({ habit, today }: Props) {
             {habit.name}
           </Text>
           <Text variant="caption" tone="inkMuted" tabular>
-            {habit.currentStreak === 1 ? '1 dia seguido' : `${habit.currentStreak} dias seguidos`}
+            {habit.currentStreak === 1
+              ? unit === 'dias'
+                ? '1 dia seguido'
+                : '1 semana seguida'
+              : `${habit.currentStreak} ${unit} seguid${unit === 'dias' ? 'os' : 'as'}`}
           </Text>
         </View>
+        {onToggleToday ? (
+          <MarkButton
+            done={doneToday}
+            accent={accent}
+            label={doneToday ? `Desmarcar ${habit.name} hoje` : `Marcar ${habit.name} hoje`}
+            onPress={onToggleToday}
+          />
+        ) : null}
       </View>
 
       {/* o grid do card e so leitura: marcar acontece no botao e na tela de detalhe */}
       <View style={styles.grid} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {gridDays(today).map((week) => (
           <View key={week[0]} style={styles.week}>
-            {week.map((day) => {
-              const done = habit.completedDays.has(day);
-              return (
+            {week.map((day) =>
+              day === today ? (
+                <TodayCell key={day} done={doneToday} size={size} accent={accent} />
+              ) : (
                 <View
                   key={day}
                   style={[
                     styles.cell,
                     { width: size, height: size },
                     day > today ? styles.future : null,
-                    done ? { backgroundColor: accent } : null,
+                    habit.completedDays.has(day) ? { backgroundColor: accent } : null,
                   ]}
                 />
-              );
-            })}
+              ),
+            )}
           </View>
         ))}
       </View>
     </View>
   );
+}
+
+/** So a bolinha de hoje anima: as outras 97 sao View comum, e ninguem sente falta. */
+function TodayCell({ done, size, accent }: { done: boolean; size: number; accent: string }) {
+  const progress = useSharedValue(done ? 1 : 0);
+
+  useEffect(() => {
+    progress.set(
+      withSpring(done ? 1 : 0, { duration: 400, dampingRatio: 0.8, reduceMotion: ReduceMotion.System }),
+    );
+  }, [done, progress]);
+
+  const animated = useAnimatedStyle(() => {
+    const value = progress.get();
+    return {
+      backgroundColor: interpolateColor(value, [0, 1], [color.surfaceOverlay, accent]),
+      transform: [{ scale: 1 + 0.35 * value }],
+    };
+  });
+
+  return <Animated.View style={[styles.cell, { width: size, height: size }, animated]} />;
 }
 
 const styles = StyleSheet.create({
