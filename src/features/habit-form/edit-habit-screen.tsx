@@ -36,6 +36,7 @@ export function EditHabitScreen({ id }: { id: string }) {
         icon: habit.icon,
         color: paletteKeyOf(habit.color),
         schedule: scheduleOf(habit),
+        streakGoal: habit.streakGoal,
       }}
       onSubmit={(values) => updateHabit(habit.id, values, new Date())}
       onClose={() => router.back()}

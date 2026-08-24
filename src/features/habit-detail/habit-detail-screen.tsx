@@ -9,16 +9,19 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
-import { archiveHabit, habitByIdQuery, scheduleOf } from '@/data/habits';
+import { archiveHabit, habitByIdQuery, scheduleOf, updateStreakGoal } from '@/data/habits';
+import { notesOfHabit, saveNote } from '@/data/notes';
 import { monthOf, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { weekdaysOf, type Schedule } from '@/domain/schedule';
 import { monthRate } from '@/domain/stats';
-import { currentStreak, recordStreak, streakUnit } from '@/domain/streak';
+import { currentStreak, goalProgress, recordStreak, streakUnit } from '@/domain/streak';
+import { DayNoteDialog } from '@/features/habit-detail/day-note-dialog';
 import { DragToComplete } from '@/features/habit-detail/drag-to-complete';
 import { Heatmap } from '@/features/habit-detail/heatmap';
 import { MonthCalendar } from '@/features/habit-detail/month-calendar';
 import { StreakCard } from '@/features/habit-detail/streak-card';
+import { StreakGoalDialog } from '@/features/streak-goal/streak-goal-dialog';
 import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
 import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
@@ -51,10 +54,13 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const [month, setMonth] = useState(() => monthOf(today));
   const [menuOpen, setMenuOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [goalOpen, setGoalOpen] = useState(false);
+  const [noteDay, setNoteDay] = useState<Day | null>(null);
   const insets = useSafeAreaInsets();
 
   const { data: found } = useLiveQuery(habitByIdQuery(id), [id]);
   const { data: completions } = useLiveQuery(completionsOfHabit(id), [id]);
+  const { data: notes } = useLiveQuery(notesOfHabit(id), [id]);
   const habit = found.at(0);
 
   const completedDays = useMemo(() => {
@@ -66,6 +72,14 @@ export function HabitDetailScreen({ id }: { id: string }) {
     return days;
   }, [completions, habit?.targetPerDay]);
 
+  const notesByDay = useMemo(() => {
+    const byDay = new Map<Day, string>();
+    for (const note of notes) byDay.set(note.day, note.text);
+    return byDay;
+  }, [notes]);
+
+  const noteDays = useMemo(() => new Set(notesByDay.keys()), [notesByDay]);
+
   if (!habit) return <View style={styles.screen} />;
 
   const schedule = scheduleOf(habit);
@@ -76,6 +90,7 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const wide = breakpoint !== 'compact';
 
   const toggle = (day: Day) => toggleCompletion(habit, day, new Date());
+  const current = currentStreak(input);
 
   async function archive() {
     if (!habit) return;
@@ -86,10 +101,13 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const left = (
     <View style={styles.column}>
       <StreakCard
-        current={currentStreak(input)}
+        current={current}
         record={recordStreak(input)}
+        goal={habit.streakGoal}
+        progress={goalProgress(current, habit.streakGoal)}
         unit={unit}
         accent={accent}
+        onEditGoal={() => setGoalOpen(true)}
       />
       <View style={styles.chips}>
         <View style={[styles.chip, { backgroundColor: withOpacity(accent, 0.12) }]}>
@@ -120,7 +138,9 @@ export function HabitDetailScreen({ id }: { id: string }) {
         today={today}
         completedDays={completedDays}
         accent={accent}
+        noteDays={noteDays}
         onToggleDay={toggle}
+        onOpenNote={setNoteDay}
       />
     </View>
   );
@@ -166,6 +186,26 @@ export function HabitDetailScreen({ id }: { id: string }) {
             onPress: () => setArchiveOpen(true),
           },
         ]}
+      />
+
+      <StreakGoalDialog
+        visible={goalOpen}
+        value={habit.streakGoal}
+        unit={unit}
+        accent={accent}
+        onChange={(goal) => updateStreakGoal(habit.id, goal, new Date())}
+        onClose={() => setGoalOpen(false)}
+      />
+
+      <DayNoteDialog
+        key={noteDay ?? 'sem-dia'}
+        day={noteDay}
+        initialText={noteDay === null ? '' : (notesByDay.get(noteDay) ?? '')}
+        onSave={(text) => {
+          if (noteDay !== null) saveNote(habit.id, noteDay, text, new Date());
+          setNoteDay(null);
+        }}
+        onClose={() => setNoteDay(null)}
       />
 
       <ConfirmDialog

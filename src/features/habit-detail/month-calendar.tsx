@@ -33,10 +33,21 @@ type Props = {
   today: Day;
   completedDays: ReadonlySet<Day>;
   accent: string;
+  noteDays: ReadonlySet<Day>;
   onToggleDay: (day: Day) => void;
+  onOpenNote: (day: Day) => void;
 };
 
-export function MonthCalendar({ month, onMonthChange, today, completedDays, accent, onToggleDay }: Props) {
+export function MonthCalendar({
+  month,
+  onMonthChange,
+  today,
+  completedDays,
+  accent,
+  noteDays,
+  onToggleDay,
+  onOpenNote,
+}: Props) {
   const breakpoint = useBreakpoint();
   const height = cellHeight[breakpoint];
   const dot = height - space.sm;
@@ -105,6 +116,10 @@ export function MonthCalendar({ month, onMonthChange, today, completedDays, acce
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onToggleDay(day);
               }}
+              onLongPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onOpenNote(day);
+              }}
               style={[styles.cell, { height }]}>
               <View
                 style={[
@@ -121,6 +136,11 @@ export function MonthCalendar({ month, onMonthChange, today, completedDays, acce
                   {Number(day.slice(8))}
                 </Text>
               </View>
+
+              {/* ponto indicador: o dia tem nota guardada */}
+              {noteDays.has(day) ? (
+                <View style={[styles.noteDot, { backgroundColor: done ? color.ink : accent }]} />
+              ) : null}
             </PressableScale>
           );
         })}
@@ -147,4 +167,5 @@ const styles = StyleSheet.create({
   /* o anel de hoje e claro: sobre o preenchido da cor do habito, um anel da mesma cor sumiria */
   todayRing: { borderColor: color.ink },
   future: { backgroundColor: withOpacity(color.ground, 0.6), opacity: 0.45 },
+  noteDot: { position: 'absolute', bottom: space.xs, width: 4, height: 4, borderRadius: radius.pill },
 });

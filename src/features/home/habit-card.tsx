@@ -52,6 +52,12 @@ type Props = {
   onToggleToday?: () => void;
 };
 
+/** pt-BR concorda em numero e genero: "1 dia seguido", "2 semanas seguidas". */
+function streakLabel(value: number, unit: 'dias' | 'semanas'): string {
+  if (unit === 'dias') return value === 1 ? '1 dia seguido' : `${value} dias seguidos`;
+  return value === 1 ? '1 semana seguida' : `${value} semanas seguidas`;
+}
+
 export function HabitCard({ habit, today, onToggleToday }: Props) {
   const breakpoint = useBreakpoint();
   const accent = palette[habit.color];
@@ -70,11 +76,7 @@ export function HabitCard({ habit, today, onToggleToday }: Props) {
             {habit.name}
           </Text>
           <Text variant="caption" tone="inkMuted" tabular>
-            {habit.currentStreak === 1
-              ? unit === 'dias'
-                ? '1 dia seguido'
-                : '1 semana seguida'
-              : `${habit.currentStreak} ${unit} seguid${unit === 'dias' ? 'os' : 'as'}`}
+            {streakLabel(habit.currentStreak, unit)}
           </Text>
         </View>
         {onToggleToday ? (
