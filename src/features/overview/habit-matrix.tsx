@@ -62,7 +62,7 @@ export function HabitMatrix({ rows, today }: Props) {
           contentContainerStyle={styles.grid}>
           <View style={styles.lines}>
             {rows.map((row) => (
-              <View key={row.id} style={[styles.line, { height: 32 }]}>
+              <View key={row.id} style={styles.line}>
                 {days.map((day) => {
                   const done = row.completedDays.has(day);
                   const scheduled = isScheduled(row.schedule, day);
@@ -91,7 +91,7 @@ export function HabitMatrix({ rows, today }: Props) {
 const styles = StyleSheet.create({
   block: { gap: space.sm },
   row: { flexDirection: 'row', gap: space.sm },
-  icons: { gap: 0 },
+  icons: { gap: space.sm },
   square: {
     width: 32,
     height: 32,
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   },
   /* quando o conteudo cabe, o fim fica encostado a direita: o dia de hoje e a ancora */
   grid: { flexDirection: 'row', flexGrow: 1, justifyContent: 'flex-end' },
-  lines: { gap: 0 },
-  line: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  lines: { gap: space.sm },
+  line: { height: 32, flexDirection: 'row', alignItems: 'center', gap: space.xs },
   cell: { borderRadius: radius.sm / 2, backgroundColor: color.surfaceOverlay },
   /* dia nao agendado e neutro: nem cobranca, nem conquista */
   neutral: { backgroundColor: color.surfaceRaised, opacity: 0.5 },
