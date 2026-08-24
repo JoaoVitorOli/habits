@@ -15,6 +15,7 @@ import type { PaletteKey } from '@/domain/palette';
 import type { Schedule } from '@/domain/schedule';
 import { streakUnit } from '@/domain/streak';
 import { MarkButton } from '@/features/home/mark-button';
+import { streakLabel } from '@/features/streak-label';
 import { Icon, type IconRef } from '@/ui/icon';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
@@ -51,12 +52,6 @@ type Props = {
   today: Day;
   onToggleToday?: () => void;
 };
-
-/** pt-BR concorda em numero e genero: "1 dia seguido", "2 semanas seguidas". */
-function streakLabel(value: number, unit: 'dias' | 'semanas'): string {
-  if (unit === 'dias') return value === 1 ? '1 dia seguido' : `${value} dias seguidos`;
-  return value === 1 ? '1 semana seguida' : `${value} semanas seguidas`;
-}
 
 export function HabitCard({ habit, today, onToggleToday }: Props) {
   const breakpoint = useBreakpoint();

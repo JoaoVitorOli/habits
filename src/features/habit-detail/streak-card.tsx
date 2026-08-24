@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { unitFor } from '@/features/streak-label';
 import { duration, EASE_OUT } from '@/ui/motion';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
@@ -21,12 +22,6 @@ type Props = {
   accent: string;
   onEditGoal: () => void;
 };
-
-/** pt-BR nao aceita "1 semanas": a unidade concorda com o numero. */
-function unitFor(value: number, unit: 'dias' | 'semanas'): string {
-  if (value === 1) return unit === 'dias' ? 'dia' : 'semana';
-  return unit;
-}
 
 export function StreakCard({ current, record, goal, progress, unit, accent, onEditGoal }: Props) {
   return (
