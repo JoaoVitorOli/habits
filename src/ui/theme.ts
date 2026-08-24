@@ -1,5 +1,6 @@
 import type { TextStyle } from 'react-native';
 
+import type { PaletteKey } from '@/domain/palette';
 import type { Breakpoint } from '@/ui/use-breakpoint';
 
 export const color = {
@@ -18,7 +19,7 @@ export const color = {
   perigo: '#EE5757',
 } as const;
 
-export const palette = {
+export const palette: Record<PaletteKey, string> = {
   violeta: '#6C4BF6',
   indigo: '#4C6BF5',
   azul: '#2E90E8',
@@ -29,13 +30,7 @@ export const palette = {
   laranja: '#EE7B42',
   vermelho: '#EE5757',
   rosa: '#E94C93',
-} as const;
-
-export type PaletteKey = keyof typeof palette;
-
-export const paletteKeys = Object.keys(palette) as PaletteKey[];
-
-export const defaultPaletteKey: PaletteKey = 'violeta';
+};
 
 export const space = {
   xs: 4,

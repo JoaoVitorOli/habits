@@ -1,10 +1,10 @@
-import { and, asc, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/data/db';
 import { uuidV7 } from '@/data/id';
 import { habits, type HabitRow } from '@/data/schema';
 import type { Schedule } from '@/domain/schedule';
-import type { PaletteKey } from '@/ui/theme';
+import type { PaletteKey } from '@/domain/palette';
 
 export type NewHabit = {
   name: string;
@@ -21,6 +21,13 @@ export const activeHabitsQuery = db
   .from(habits)
   .where(and(isNull(habits.deletedAt), isNull(habits.archivedAt)))
   .orderBy(asc(habits.position));
+
+export function habitByIdQuery(id: string) {
+  return db
+    .select()
+    .from(habits)
+    .where(and(eq(habits.id, id), isNull(habits.deletedAt)));
+}
 
 export async function createHabit(input: NewHabit, now: Date): Promise<HabitRow> {
   const timestamp = now.toISOString();

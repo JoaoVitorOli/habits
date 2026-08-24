@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
-import { palette, paletteKeys, radius, space, color, type PaletteKey } from '@/ui/theme';
+import { paletteKeys, type PaletteKey } from '@/domain/palette';
+import { color, palette, radius, space } from '@/ui/theme';
 
 type Props = {
   value: PaletteKey;

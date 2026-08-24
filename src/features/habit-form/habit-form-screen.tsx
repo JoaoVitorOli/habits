@@ -11,12 +11,13 @@ import { IconPicker } from '@/features/habit-form/icon-picker';
 import { SchedulePicker } from '@/features/habit-form/schedule-picker';
 import { HabitCard } from '@/features/home/habit-card';
 import { useToday } from '@/features/use-today';
+import { defaultPaletteKey, type PaletteKey } from '@/domain/palette';
 import type { Schedule } from '@/domain/schedule';
 import { Button } from '@/ui/button';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { TextField } from '@/ui/text-field';
-import { color, defaultPaletteKey, space, type PaletteKey } from '@/ui/theme';
+import { color, space } from '@/ui/theme';
 
 const NO_DAYS: ReadonlySet<string> = new Set();
 

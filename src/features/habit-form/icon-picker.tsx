@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react';
 import { FlatList, Modal, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { PaletteKey } from '@/domain/palette';
 import { emojis } from '@/features/habit-form/emojis';
 import { Icon, type IconRef } from '@/ui/icon';
 import { lucideIconNames } from '@/ui/icons';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
-import { color, fontFamily, palette, radius, space, withOpacity, type PaletteKey } from '@/ui/theme';
+import { color, fontFamily, palette, radius, space, withOpacity } from '@/ui/theme';
 import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 
 const columns: Record<Breakpoint, number> = { compact: 5, medium: 8, expanded: 10 };
