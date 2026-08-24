@@ -2,6 +2,7 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import Plus from 'lucide-react-native/icons/plus';
+import Settings from 'lucide-react-native/icons/settings';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -60,7 +61,16 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text variant="title">Hábitos</Text>
+        <Text variant="title" style={styles.title}>
+          Hábitos
+        </Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Ajustes"
+          onPress={() => router.push('/ajustes')}
+          style={styles.action}>
+          <Settings size={24} color={color.inkMuted} />
+        </PressableScale>
       </View>
 
       {habits.length === 0 ? (
@@ -116,7 +126,15 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.ground },
-  header: { paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.md,
+  },
+  title: { flex: 1 },
+  action: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: space.md, paddingBottom: space['3xl'] },
   columns: { flexDirection: 'row', flexWrap: 'wrap' },
   column: { padding: space.sm },
