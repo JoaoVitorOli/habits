@@ -2,6 +2,12 @@ import * as Haptics from 'expo-haptics';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import {
   addDays,
@@ -12,6 +18,7 @@ import {
   type Day,
   type Month,
 } from '@/domain/calendar';
+import { duration as motion, EASE_OUT } from '@/ui/motion';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, radius, space, withOpacity } from '@/ui/theme';
@@ -19,6 +26,9 @@ import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 
 /** Degrau fixo por breakpoint. Sem isso a celula seguiria a largura e viraria um circulo gigante. */
 const cellHeight: Record<Breakpoint, number> = { compact: 48, medium: 52, expanded: 56 };
+
+/** de onde o mes entra: consistencia espacial, para o dedo saber para que lado andou */
+const SLIDE = 32;
 
 const MONTH_NAMES = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -49,6 +59,8 @@ export function MonthCalendar({
   onOpenNote,
 }: Props) {
   const breakpoint = useBreakpoint();
+  const shift = useSharedValue(0);
+  const fade = useSharedValue(1);
   const height = cellHeight[breakpoint];
   const dot = height - space.sm;
   const first = startOfMonth(month);
@@ -61,13 +73,29 @@ export function MonthCalendar({
   const [year, index] = month.split('-').map(Number);
   const atCurrentMonth = month >= today.slice(0, 7);
 
+  function goTo(delta: number) {
+    onMonthChange(addMonths(month, delta));
+
+    shift.set(delta > 0 ? SLIDE : -SLIDE);
+    fade.set(0.2);
+
+    const timing = { duration: motion.toggle, easing: EASE_OUT, reduceMotion: ReduceMotion.System };
+    shift.set(withTiming(0, timing));
+    fade.set(withTiming(1, timing));
+  }
+
+  const entering = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+    transform: [{ translateX: shift.get() }],
+  }));
+
   return (
     <View style={styles.block}>
       <View style={styles.header}>
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Mês anterior"
-          onPress={() => onMonthChange(addMonths(month, -1))}
+          onPress={() => goTo(-1)}
           style={styles.arrow}>
           <ChevronLeft size={24} color={color.inkMuted} />
         </PressableScale>
@@ -80,7 +108,7 @@ export function MonthCalendar({
           accessibilityRole="button"
           accessibilityLabel="Próximo mês"
           disabled={atCurrentMonth}
-          onPress={() => onMonthChange(addMonths(month, 1))}
+          onPress={() => goTo(1)}
           style={styles.arrow}>
           <ChevronRight size={24} color={atCurrentMonth ? color.inkDisabled : color.inkMuted} />
         </PressableScale>
@@ -96,7 +124,7 @@ export function MonthCalendar({
         ))}
       </View>
 
-      <View style={styles.grid}>
+      <Animated.View style={[styles.grid, entering]}>
         {Array.from({ length: blanks }, (_, blank) => (
           <View key={`vazio-${blank}`} style={[styles.cell, { height }]} />
         ))}
@@ -144,7 +172,7 @@ export function MonthCalendar({
             </PressableScale>
           );
         })}
-      </View>
+      </Animated.View>
     </View>
   );
 }

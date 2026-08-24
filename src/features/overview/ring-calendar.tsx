@@ -1,6 +1,12 @@
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
 import {
@@ -12,6 +18,7 @@ import {
   type Day,
   type Month,
 } from '@/domain/calendar';
+import { duration, EASE_OUT } from '@/ui/motion';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, radius, space } from '@/ui/theme';
@@ -27,6 +34,9 @@ const WEEKDAY_INITIALS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const ringSize: Record<Breakpoint, number> = { compact: 36, medium: 40, expanded: 44 };
 const STROKE = 4;
 
+/** de onde o mes entra: consistencia espacial, para o dedo saber para que lado andou */
+const SLIDE = 32;
+
 type Props = {
   month: Month;
   onMonthChange: (month: Month) => void;
@@ -37,6 +47,8 @@ type Props = {
 
 export function RingCalendar({ month, onMonthChange, today, ratioOf, onSelectDay }: Props) {
   const breakpoint = useBreakpoint();
+  const shift = useSharedValue(0);
+  const fade = useSharedValue(1);
   const size = ringSize[breakpoint];
   const first = startOfMonth(month);
   const last = endOfMonth(month);
@@ -48,13 +60,30 @@ export function RingCalendar({ month, onMonthChange, today, ratioOf, onSelectDay
   const [year, index] = month.split('-').map(Number);
   const atCurrentMonth = month >= today.slice(0, 7);
 
+  /* o mes novo entra do lado para onde o dedo andou: avancar traz da direita, voltar da esquerda */
+  function goTo(delta: number) {
+    onMonthChange(addMonths(month, delta));
+
+    shift.set(delta > 0 ? SLIDE : -SLIDE);
+    fade.set(0.2);
+
+    const timing = { duration: duration.toggle, easing: EASE_OUT, reduceMotion: ReduceMotion.System };
+    shift.set(withTiming(0, timing));
+    fade.set(withTiming(1, timing));
+  }
+
+  const entering = useAnimatedStyle(() => ({
+    opacity: fade.get(),
+    transform: [{ translateX: shift.get() }],
+  }));
+
   return (
     <View style={styles.block}>
       <View style={styles.header}>
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Mês anterior"
-          onPress={() => onMonthChange(addMonths(month, -1))}
+          onPress={() => goTo(-1)}
           style={styles.arrow}>
           <ChevronLeft size={24} color={color.inkMuted} />
         </PressableScale>
@@ -67,7 +96,7 @@ export function RingCalendar({ month, onMonthChange, today, ratioOf, onSelectDay
           accessibilityRole="button"
           accessibilityLabel="Próximo mês"
           disabled={atCurrentMonth}
-          onPress={() => onMonthChange(addMonths(month, 1))}
+          onPress={() => goTo(1)}
           style={styles.arrow}>
           <ChevronRight size={24} color={atCurrentMonth ? color.inkDisabled : color.inkMuted} />
         </PressableScale>
@@ -83,7 +112,7 @@ export function RingCalendar({ month, onMonthChange, today, ratioOf, onSelectDay
         ))}
       </View>
 
-      <View style={styles.grid}>
+      <Animated.View style={[styles.grid, entering]}>
         {Array.from({ length: blanks }, (_, blank) => (
           <View key={`vazio-${blank}`} style={[styles.cell, { height: size + space.sm }]} />
         ))}
@@ -102,7 +131,7 @@ export function RingCalendar({ month, onMonthChange, today, ratioOf, onSelectDay
             </Text>
           </PressableScale>
         ))}
-      </View>
+      </Animated.View>
     </View>
   );
 }

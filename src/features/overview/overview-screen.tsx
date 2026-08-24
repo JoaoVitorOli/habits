@@ -15,6 +15,7 @@ import { monthRate } from '@/domain/stats';
 import { currentStreak, streakUnit } from '@/domain/streak';
 import { DaySummaryDialog } from '@/features/overview/day-summary-dialog';
 import { HabitMatrix } from '@/features/overview/habit-matrix';
+import { StatCard } from '@/features/overview/stat-card';
 import { RingCalendar } from '@/features/overview/ring-calendar';
 import { unitFor } from '@/features/streak-label';
 import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
@@ -117,9 +118,12 @@ export function OverviewScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.numbers}>
-          <Stat label="Taxa do mês" value={`${Math.round(monthAverage * 100)}%`} />
-          <Stat label="Melhor sequência" value={`${bestStreak.value} ${unitFor(bestStreak.value, bestStreak.unit)}`} />
-          <Stat label="Dias perfeitos" value={String(perfect)} />
+          <StatCard label="Taxa do mês" value={`${Math.round(monthAverage * 100)}%`} />
+          <StatCard
+            label="Melhor sequência"
+            value={`${bestStreak.value} ${unitFor(bestStreak.value, bestStreak.unit)}`}
+          />
+          <StatCard label="Dias perfeitos" value={String(perfect)} />
         </View>
 
         <View style={wide ? styles.wide : styles.narrow}>
@@ -160,19 +164,6 @@ export function OverviewScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text variant="label" tone="inkFaint">
-        {label}
-      </Text>
-      <Text variant="heading" tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.ground },
   header: {
@@ -185,16 +176,6 @@ const styles = StyleSheet.create({
   action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   content: { padding: space.lg, gap: space.xl, paddingBottom: space['3xl'] },
   numbers: { flexDirection: 'row', gap: space.sm },
-  stat: {
-    flex: 1,
-    minWidth: 0,
-    gap: space.xs,
-    padding: space.md,
-    borderRadius: radius.lg,
-    backgroundColor: color.surface,
-    borderTopWidth: 1,
-    borderTopColor: color.edge,
-  },
   narrow: { gap: space.xl },
   wide: { flexDirection: 'row', gap: space.xl },
   half: { flex: 1, minWidth: 0 },
