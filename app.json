@@ -39,6 +39,18 @@
         {
           "style": "light"
         }
+      ],
+      "expo-sqlite",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": [
+              "x86_64",
+              "arm64-v8a"
+            ]
+          }
+        }
       ]
     ],
     "experiments": {
