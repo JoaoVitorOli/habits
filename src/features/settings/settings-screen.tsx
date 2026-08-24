@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { exportBackup, importBackup } from '@/data/backup';
 import {
   activeHabitsQuery,
   archivedHabitsQuery,
@@ -17,17 +18,54 @@ import {
 import type { HabitRow } from '@/data/schema';
 import { paletteKeyOf } from '@/domain/palette';
 import { ReorderList } from '@/features/settings/reorder-list';
+import { Button } from '@/ui/button';
 import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
 
+/** pt-BR concorda em numero: "1 nota", "9 marcações". */
+function plural(value: number, singular: string, many: string): string {
+  return `${value} ${value === 1 ? singular : many}`;
+}
+
 export function SettingsScreen() {
   const router = useRouter();
   const { data: active } = useLiveQuery(activeHabitsQuery);
   const { data: archived } = useLiveQuery(archivedHabitsQuery);
   const [pendingDelete, setPendingDelete] = useState<HabitRow | null>(null);
+  const [backupStatus, setBackupStatus] = useState<{ text: string; failed: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function runBackup(task: 'export' | 'import') {
+    setBusy(true);
+    setBackupStatus(null);
+
+    try {
+      if (task === 'export') {
+        const name = await exportBackup(new Date());
+        setBackupStatus({ text: `Exportado como ${name}.`, failed: false });
+      } else {
+        const summary = await importBackup();
+        if (summary === null) return;
+
+        setBackupStatus({
+          text:
+            summary.habits + summary.completions + summary.dayNotes === 0
+              ? 'Nada a aplicar: este backup já está aqui inteiro.'
+              : `Importado: ${plural(summary.habits, 'hábito', 'hábitos')}, ${plural(summary.completions, 'marcação', 'marcações')} e ${plural(summary.dayNotes, 'nota', 'notas')}.`,
+          failed: false,
+        });
+      }
+    } catch (error) {
+      // cancelar o seletor de arquivo tambem cai aqui, e nao e falha do usuario
+      const reason = error instanceof Error ? error.message : 'Não deu para concluir.';
+      setBackupStatus({ text: reason, failed: true });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
@@ -66,6 +104,37 @@ export function SettingsScreen() {
                 onCommit={(orderedIds) => reorderHabits(orderedIds, new Date())}
               />
             </>
+          )}
+        </View>
+
+        <View style={styles.block}>
+          <Text variant="label" tone="inkFaint">
+            Backup
+          </Text>
+          <Text variant="caption" tone="inkFaint">
+            Um arquivo JSON com tudo, inclusive o que foi excluído. Reimportar o mesmo arquivo não
+            muda nada.
+          </Text>
+          <View style={styles.backupActions}>
+            <Button
+              label="Exportar"
+              variant="ghost"
+              disabled={busy}
+              onPress={() => runBackup('export')}
+              style={styles.backupAction}
+            />
+            <Button
+              label="Importar"
+              variant="ghost"
+              disabled={busy}
+              onPress={() => runBackup('import')}
+              style={styles.backupAction}
+            />
+          </View>
+          {backupStatus === null ? null : (
+            <Text variant="caption" tone={backupStatus.failed ? 'perigo' : 'inkMuted'}>
+              {backupStatus.text}
+            </Text>
           )}
         </View>
 
@@ -136,6 +205,8 @@ const styles = StyleSheet.create({
   },
   content: { padding: space.lg, gap: space.xl, paddingBottom: space['3xl'] },
   block: { gap: space.sm },
+  backupActions: { flexDirection: 'row', gap: space.sm },
+  backupAction: { flex: 1 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
