@@ -1,12 +1,14 @@
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useRouter } from 'expo-router';
+import Archive from 'lucide-react-native/icons/archive';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
+import Pencil from 'lucide-react-native/icons/pencil';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
-import { habitByIdQuery, scheduleOf } from '@/data/habits';
+import { archiveHabit, habitByIdQuery, scheduleOf } from '@/data/habits';
 import { monthOf, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { weekdaysOf, type Schedule } from '@/domain/schedule';
@@ -66,6 +68,25 @@ export function HabitDetailScreen({ id }: { id: string }) {
 
   const toggle = (day: Day) => toggleCompletion(habit, day, new Date());
 
+  function confirmArchive() {
+    if (!habit) return;
+
+    Alert.alert(
+      `Arquivar ${habit.name}?`,
+      'Ele sai da home e para de contar sequência. O histórico fica guardado e dá para restaurar em Ajustes.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Arquivar',
+          onPress: async () => {
+            await archiveHabit(habit.id, new Date());
+            router.dismissTo('/');
+          },
+        },
+      ],
+    );
+  }
+
   const left = (
     <View style={styles.column}>
       <StreakCard
@@ -120,6 +141,20 @@ export function HabitDetailScreen({ id }: { id: string }) {
         <Text variant="heading" numberOfLines={1} style={styles.name}>
           {habit.name}
         </Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Editar hábito"
+          onPress={() => router.push({ pathname: '/habito/editar/[id]', params: { id: habit.id } })}
+          style={styles.action}>
+          <Pencil size={22} color={color.inkMuted} />
+        </PressableScale>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Arquivar hábito"
+          onPress={confirmArchive}
+          style={styles.action}>
+          <Archive size={22} color={color.inkMuted} />
+        </PressableScale>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -151,6 +186,7 @@ const styles = StyleSheet.create({
   },
   iconSquare: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   name: { flex: 1 },
+  action: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   content: { padding: space.lg, paddingBottom: space['2xl'] },
   narrow: { gap: space.xl },
   wide: { flexDirection: 'row', gap: space.xl },

@@ -1,11 +1,10 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import X from 'lucide-react-native/icons/x';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { createHabit } from '@/data/habits';
+import type { NewHabit } from '@/data/habits';
 import { ColorPicker } from '@/features/habit-form/color-picker';
 import { IconPicker } from '@/features/habit-form/icon-picker';
 import { SchedulePicker } from '@/features/habit-form/schedule-picker';
@@ -21,15 +20,39 @@ import { color, space } from '@/ui/theme';
 
 const NO_DAYS: ReadonlySet<string> = new Set();
 
-export function HabitFormScreen() {
-  const router = useRouter();
+export type HabitFormValues = {
+  name: string;
+  description: string;
+  icon: string;
+  color: PaletteKey;
+  schedule: Schedule;
+};
+
+export const emptyHabitForm: HabitFormValues = {
+  name: '',
+  description: '',
+  icon: 'lucide:dumbbell',
+  color: defaultPaletteKey,
+  schedule: { kind: 'daysOfWeek', days: 127 },
+};
+
+type Props = {
+  title: string;
+  submitLabel: string;
+  initial: HabitFormValues;
+  onSubmit: (habit: NewHabit) => Promise<void>;
+  onClose: () => void;
+  footer?: React.ReactNode;
+};
+
+export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, footer }: Props) {
   const today = useToday();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [icon, setIcon] = useState('lucide:dumbbell');
-  const [paletteKey, setPaletteKey] = useState<PaletteKey>(defaultPaletteKey);
-  const [schedule, setSchedule] = useState<Schedule>({ kind: 'daysOfWeek', days: 127 });
+  const [name, setName] = useState(initial.name);
+  const [description, setDescription] = useState(initial.description);
+  const [icon, setIcon] = useState(initial.icon);
+  const [paletteKey, setPaletteKey] = useState<PaletteKey>(initial.color);
+  const [schedule, setSchedule] = useState<Schedule>(initial.schedule);
   const [saving, setSaving] = useState(false);
 
   const named = name.trim().length > 0;
@@ -39,19 +62,16 @@ export function HabitFormScreen() {
   async function save() {
     setSaving(true);
     try {
-      await createHabit(
-        {
-          name: name.trim(),
-          description: description.trim() || null,
-          icon,
-          color: paletteKey,
-          schedule,
-          targetPerDay: 1,
-        },
-        new Date(),
-      );
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim() || null,
+        icon,
+        color: paletteKey,
+        schedule,
+        targetPerDay: 1,
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      onClose();
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setSaving(false);
@@ -64,8 +84,8 @@ export function HabitFormScreen() {
         style={styles.screen}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Text variant="heading">Novo hábito</Text>
-          <PressableScale accessibilityRole="button" accessibilityLabel="Fechar" onPress={() => router.back()}>
+          <Text variant="heading">{title}</Text>
+          <PressableScale accessibilityRole="button" accessibilityLabel="Fechar" onPress={onClose}>
             <X size={24} color={color.inkMuted} />
           </PressableScale>
         </View>
@@ -101,10 +121,12 @@ export function HabitFormScreen() {
               Escolha ao menos um dia da semana.
             </Text>
           ) : null}
+
+          {footer}
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button label="Salvar hábito" onPress={save} disabled={!canSave} loading={saving} />
+          <Button label={submitLabel} onPress={save} disabled={!canSave} loading={saving} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -61,6 +61,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.ground } }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="habito/novo" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="habito/editar/[id]" options={{ presentation: 'modal' }} />
           </Stack>
         </ThemeProvider>
       </SafeAreaProvider>
