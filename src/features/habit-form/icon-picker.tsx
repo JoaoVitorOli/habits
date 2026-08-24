@@ -63,7 +63,11 @@ export function IconPicker({ value, accent, onChange }: Props) {
         <SafeAreaView style={styles.sheet}>
           <View style={styles.sheetHeader}>
             <Text variant="heading">Escolher ícone</Text>
-            <PressableScale accessibilityRole="button" accessibilityLabel="Fechar" onPress={() => setOpen(false)}>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Fechar"
+              onPress={() => setOpen(false)}
+              style={styles.action}>
               <X size={24} color={color.inkMuted} />
             </PressableScale>
           </View>
@@ -148,6 +152,7 @@ function Tab({ label, selected, onPress }: { label: string; selected: boolean; o
 
 const styles = StyleSheet.create({
   group: { gap: space.sm },
+  action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',

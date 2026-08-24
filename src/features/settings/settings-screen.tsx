@@ -44,7 +44,11 @@ export function SettingsScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <PressableScale accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()}>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+          onPress={() => router.back()}
+          style={styles.action}>
           <ChevronLeft size={28} color={color.inkMuted} />
         </PressableScale>
         <Text variant="heading">Ajustes</Text>
@@ -143,5 +147,5 @@ const styles = StyleSheet.create({
   },
   square: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   name: { flex: 1 },
-  action: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
 });

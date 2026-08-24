@@ -132,7 +132,11 @@ export function HabitDetailScreen({ id }: { id: string }) {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <PressableScale accessibilityRole="button" accessibilityLabel="Voltar" onPress={() => router.back()}>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+          onPress={() => router.back()}
+          style={styles.action}>
           <ChevronLeft size={28} color={color.inkMuted} />
         </PressableScale>
         <View style={[styles.iconSquare, { backgroundColor: withOpacity(accent, 0.16) }]}>
@@ -186,7 +190,7 @@ const styles = StyleSheet.create({
   },
   iconSquare: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   name: { flex: 1 },
-  action: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   content: { padding: space.lg, paddingBottom: space['2xl'] },
   narrow: { gap: space.xl },
   wide: { flexDirection: 'row', gap: space.xl },

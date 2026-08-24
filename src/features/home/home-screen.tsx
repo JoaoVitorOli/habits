@@ -87,6 +87,7 @@ export function HomeScreen() {
                   <PressableScale
                     accessibilityRole="button"
                     accessibilityLabel={`Abrir ${habit.name}`}
+                    style={styles.card}
                     onPress={() => router.push({ pathname: '/habito/[id]', params: { id: habit.id } })}>
                     <HabitCard
                       today={today}
@@ -134,10 +135,11 @@ const styles = StyleSheet.create({
     paddingBottom: space.md,
   },
   title: { flex: 1 },
-  action: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: space.md, paddingBottom: space['3xl'] },
   columns: { flexDirection: 'row', flexWrap: 'wrap' },
   column: { padding: space.sm },
+  card: { borderRadius: radius.xl },
   fab: {
     position: 'absolute',
     right: space.lg,

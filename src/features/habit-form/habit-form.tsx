@@ -16,7 +16,7 @@ import { Button } from '@/ui/button';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { TextField } from '@/ui/text-field';
-import { color, space } from '@/ui/theme';
+import { color, radius, space } from '@/ui/theme';
 
 const NO_DAYS: ReadonlySet<string> = new Set();
 
@@ -85,7 +85,11 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Text variant="heading">{title}</Text>
-          <PressableScale accessibilityRole="button" accessibilityLabel="Fechar" onPress={onClose}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Fechar"
+            onPress={onClose}
+            style={styles.action}>
             <X size={24} color={color.inkMuted} />
           </PressableScale>
         </View>
@@ -135,6 +139,7 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.ground },
+  action: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

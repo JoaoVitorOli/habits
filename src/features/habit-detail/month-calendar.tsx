@@ -132,10 +132,10 @@ export function MonthCalendar({ month, onMonthChange, today, completedDays, acce
 const styles = StyleSheet.create({
   block: { gap: space.sm },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  arrow: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  arrow: { width: 48, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   week: { flexDirection: 'row' },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: `${100 / 7}%`, alignItems: 'center', justifyContent: 'center' },
+  cell: { width: `${100 / 7}%`, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   dot: {
     borderRadius: radius.pill,
     alignItems: 'center',
