@@ -6,6 +6,7 @@ import {
   BarlowCondensed_700Bold,
   useFonts,
 } from '@expo-google-fonts/barlow-condensed';
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +14,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { db } from '@/data/db';
+import migrations from '@/data/migrations/migrations';
 import { color } from '@/ui/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,18 +41,27 @@ export default function RootLayout() {
     BarlowCondensed_700Bold,
   });
 
-  useEffect(() => {
-    if (fontesCarregadas || erroDeFonte) SplashScreen.hideAsync();
-  }, [fontesCarregadas, erroDeFonte]);
+  const { success: bancoPronto, error: erroDeMigracao } = useMigrations(db, migrations);
 
-  if (!fontesCarregadas && !erroDeFonte) return null;
+  const pronto = (fontesCarregadas || erroDeFonte) && (bancoPronto || erroDeMigracao);
+
+  useEffect(() => {
+    if (pronto) SplashScreen.hideAsync();
+  }, [pronto]);
+
+  if (!pronto) return null;
+
+  if (erroDeMigracao) throw erroDeMigracao;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: color.ground }}>
       <SafeAreaProvider>
         <ThemeProvider value={tema}>
           <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.ground } }} />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.ground } }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="habito/novo" options={{ presentation: 'modal' }} />
+          </Stack>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
