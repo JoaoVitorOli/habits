@@ -328,9 +328,10 @@ Conta Google e estado do sync ("sincronizado há X min", "sincronizar agora") ·
 primeiro dia da semana · versão.
 
 ### 7.6 Widget
-Hábito escolhido na hora de adicionar. Três tamanhos: 2×2 (ícone, nome, streak), 4×2 (+ grid
-curto), 4×4 (grid longo). Toque na bolinha de hoje marca/desmarca com atualização otimista, grava
-no banco pelo headless task e reescreve o snapshot.
+Hábito escolhido na hora de adicionar, numa Activity de configuração própria. **Um widget só,
+redimensionável**, com três desenhos escolhidos pelo tamanho medido: 2×2 (ícone, nome, streak),
+4×2 (+ faixa da semana), 4×4 (matriz de 14 semanas). Toque na bolinha de hoje marca/desmarca com
+atualização otimista, grava no banco pelo headless task e reescreve o snapshot.
 
 ---
 
@@ -400,3 +401,4 @@ Nada disso bloqueia as fatias 0–8.
 | data | mudança |
 |---|---|
 | 2026-08-22 | Versão inicial, produzida por entrevista. 26 decisões fechadas. |
+| 2026-08-24 | Widget: um receiver redimensionável em vez de três entradas no seletor. Os três tamanhos viraram três layouts sobre o tamanho medido — mesma promessa, sem triplicar o seletor. |
