@@ -98,3 +98,12 @@ export function typographyOf(variant: Variant, breakpoint: Breakpoint): TextStyl
     textTransform: spec.uppercase ? 'uppercase' : 'none',
   };
 }
+
+/** Tinge a cor do habito. So o quadrado do icone, as bolinhas, os chips e o glow usam isso. */
+export function withOpacity(hex: string, alpha: number): string {
+  const value = hex.replace('#', '');
+  const red = parseInt(value.slice(0, 2), 16);
+  const green = parseInt(value.slice(2, 4), 16);
+  const blue = parseInt(value.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
