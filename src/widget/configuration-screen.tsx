@@ -24,7 +24,7 @@ import { Icon } from '@/ui/icon';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
-import { HabitWidget, widgetSize } from '@/widget/habit-widget';
+import { HabitWidget } from '@/widget/habit-widget';
 
 /**
  * Activity propria, aberta pelo Android quando o widget entra na tela inicial. E uma raiz
@@ -53,7 +53,7 @@ export function WidgetConfigurationScreen({
     const snapshot = await saveWidgetSnapshot(today, DEFAULT_WEEK_STARTS_ON, now);
 
     renderWidget(
-      <HabitWidget habit={habitOf(snapshot, habit.id)} today={today} size={widgetSize(widgetInfo)} />,
+      <HabitWidget habit={habitOf(snapshot, habit.id)} today={today} box={widgetInfo} />,
     );
     setResult('ok');
   }

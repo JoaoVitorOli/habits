@@ -6,7 +6,7 @@ import { forgetWidgetHabit, readWidgetSnapshot, saveWidgetSnapshot, widgetHabitI
 import { logicalDay } from '@/domain/calendar';
 import { habitOf, toggleDay } from '@/domain/widget-snapshot';
 import { DEFAULT_DAY_START_HOUR, DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
-import { HabitWidget, TOGGLE_TODAY, widgetSize } from '@/widget/habit-widget';
+import { HabitWidget, TOGGLE_TODAY } from '@/widget/habit-widget';
 
 /**
  * Roda no contexto headless, sem app aberto. Desenhar le so o snapshot — o SQLite pode nao
@@ -27,22 +27,21 @@ export const widgetTaskHandler: WidgetTaskHandler = async ({
 
   const now = new Date();
   const today = logicalDay(now, DEFAULT_DAY_START_HOUR);
-  const size = widgetSize(widgetInfo);
   const habitId = await widgetHabitId(widgetInfo.widgetId);
   const habit = habitOf(await readWidgetSnapshot(), habitId);
 
   if (widgetAction === 'WIDGET_CLICK' && clickAction === TOGGLE_TODAY && habit !== null) {
     // otimista: o dedo nao espera a gravacao, e a regra do toggle e a mesma dos dois lados
-    renderWidget(<HabitWidget habit={toggleDay(habit, today)} today={today} size={size} />);
+    renderWidget(<HabitWidget habit={toggleDay(habit, today)} today={today} box={widgetInfo} />);
 
     const [row] = await habitByIdQuery(habit.id);
     if (!row) return;
 
     await toggleCompletion(row, today, now);
     const snapshot = await saveWidgetSnapshot(today, DEFAULT_WEEK_STARTS_ON, now);
-    renderWidget(<HabitWidget habit={habitOf(snapshot, habitId)} today={today} size={size} />);
+    renderWidget(<HabitWidget habit={habitOf(snapshot, habitId)} today={today} box={widgetInfo} />);
     return;
   }
 
-  renderWidget(<HabitWidget habit={habit} today={today} size={size} />);
+  renderWidget(<HabitWidget habit={habit} today={today} box={widgetInfo} />);
 };

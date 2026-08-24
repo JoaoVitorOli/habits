@@ -16,7 +16,7 @@ import {
 
 import { weekColumns, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
-import { isDone, type SnapshotHabit } from '@/domain/widget-snapshot';
+import { SNAPSHOT_DAYS, isDone, type SnapshotHabit } from '@/domain/widget-snapshot';
 import { streakLabel } from '@/features/streak-label';
 import { DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
 import { iconKind, iconValue, type IconRef } from '@/ui/icon';
@@ -32,14 +32,43 @@ export const TOGGLE_TODAY = 'MARCAR_HOJE';
  */
 export type WidgetSize = 'pequeno' | 'medio' | 'grande';
 
-export function widgetSize({ width, height }: Pick<WidgetInfo, 'width' | 'height'>): WidgetSize {
+export type WidgetBox = Pick<WidgetInfo, 'width' | 'height'>;
+
+export function widgetSize({ width, height }: WidgetBox): WidgetSize {
   if (width < 180) return 'pequeno';
   return height < 180 ? 'medio' : 'grande';
 }
 
-const GRID_WEEKS = 14;
-const CELL = 10;
 const DAY_STRIP = 14;
+
+/** O botao de marcar e o elemento mais alto do cabecalho, e ele tem alvo de 48dp. */
+const HEADER = 48;
+
+const MIN_CELL = 8;
+const MAX_CELL = 16;
+const MIN_WEEKS = 8;
+
+/** O snapshot guarda 120 dias; pedir mais colunas do que isso desenharia vazio garantido. */
+const MAX_WEEKS = Math.floor(SNAPSHOT_DAYS / 7);
+
+function clamp(value: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, value));
+}
+
+/**
+ * A grade sai da caixa medida, nao de constantes: com 14 semanas fixas sobrava quase metade
+ * do widget vazia a direita. Quem manda na celula sao as sete linhas — a altura e o lado
+ * apertado; a largura so decide quantas semanas cabem depois disso.
+ */
+function gridMetrics({ width, height }: WidgetBox): { cell: number; weeks: number } {
+  const usableHeight = height - 2 * space.md - HEADER - space.md;
+  const cell = clamp(Math.floor((usableHeight + space.xs) / 7) - space.xs, MIN_CELL, MAX_CELL);
+
+  const usableWidth = width - 2 * space.md;
+  const weeks = clamp(Math.floor((usableWidth + space.xs) / (cell + space.xs)), MIN_WEEKS, MAX_WEEKS);
+
+  return { cell, weeks };
+}
 
 /**
  * O tipo de cor do widget e literal (`#rrggbb` ou `rgba(...)`), e a paleta e um `string`
@@ -63,12 +92,14 @@ const CHECK = '<path d="M20 6 9 17l-5-5"/>';
 type Props = {
   habit: SnapshotHabit | null;
   today: Day;
-  size: WidgetSize;
+  /** o tamanho vem medido do Android: o desenho e a grade saem dele */
+  box: WidgetBox;
 };
 
-export function HabitWidget({ habit, today, size }: Props) {
+export function HabitWidget({ habit, today, box }: Props) {
   if (habit === null) return <EmptyWidget />;
 
+  const size = widgetSize(box);
   const accent = asColor(palette[paletteKeyOf(habit.color)]);
   const padding = size === 'pequeno' ? space.sm : space.md;
 
@@ -83,11 +114,15 @@ export function HabitWidget({ habit, today, size }: Props) {
         backgroundColor: color.surface,
         borderRadius: radius.xl,
         padding,
+        // widget alto (4x4) tem mais altura do que conteudo: o bloco fica centrado, nao no topo
+        justifyContent: 'center',
         flexGap: size === 'pequeno' ? space.sm : space.md,
       }}>
       <Header habit={habit} today={today} accent={accent} size={size} />
       {size === 'medio' ? <DayStrip habit={habit} today={today} accent={accent} /> : null}
-      {size === 'grande' ? <Grid habit={habit} today={today} accent={accent} /> : null}
+      {size === 'grande' ? (
+        <Grid habit={habit} today={today} accent={accent} {...gridMetrics(box)} />
+      ) : null}
     </FlexWidget>
   );
 }
@@ -219,13 +254,26 @@ function DayStrip({ habit, today, accent }: { habit: SnapshotHabit; today: Day; 
   );
 }
 
-function Grid({ habit, today, accent }: { habit: SnapshotHabit; today: Day; accent: ColorProp }) {
+function Grid({
+  habit,
+  today,
+  accent,
+  weeks,
+  cell,
+}: {
+  habit: SnapshotHabit;
+  today: Day;
+  accent: ColorProp;
+  weeks: number;
+  cell: number;
+}) {
   return (
-    <FlexWidget style={{ flexDirection: 'row', flexGap: space.xs }}>
-      {weekColumns(today, GRID_WEEKS, DEFAULT_WEEK_STARTS_ON).map((week) => (
+    <FlexWidget
+      style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'center', flexGap: space.xs }}>
+      {weekColumns(today, weeks, DEFAULT_WEEK_STARTS_ON).map((week) => (
         <FlexWidget key={week[0]} style={{ flexGap: space.xs }}>
           {week.map((day) => (
-            <Cell key={day} habit={habit} day={day} today={today} accent={accent} size={CELL} />
+            <Cell key={day} habit={habit} day={day} today={today} accent={accent} size={cell} />
           ))}
         </FlexWidget>
       ))}

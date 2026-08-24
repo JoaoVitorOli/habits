@@ -4,7 +4,7 @@ import { saveWidgetSnapshot, widgetHabitId } from '@/data/widget';
 import { logicalDay, type Day } from '@/domain/calendar';
 import { habitOf, type WidgetSnapshot } from '@/domain/widget-snapshot';
 import { DEFAULT_DAY_START_HOUR, DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
-import { HabitWidget, widgetSize } from '@/widget/habit-widget';
+import { HabitWidget } from '@/widget/habit-widget';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
@@ -38,11 +38,7 @@ export async function drawWidgets(snapshot: WidgetSnapshot | null, today: Day): 
   await requestWidgetUpdate({
     widgetName: WIDGET_NAME,
     renderWidget: async (info) => (
-      <HabitWidget
-        habit={habitOf(snapshot, await widgetHabitId(info.widgetId))}
-        today={today}
-        size={widgetSize(info)}
-      />
+      <HabitWidget habit={habitOf(snapshot, await widgetHabitId(info.widgetId))} today={today} box={info} />
     ),
   });
 }
