@@ -2,6 +2,8 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import ChartColumn from 'lucide-react-native/icons/chart-column';
+import LayoutGrid from 'lucide-react-native/icons/layout-grid';
+import List from 'lucide-react-native/icons/list';
 import Plus from 'lucide-react-native/icons/plus';
 import Settings from 'lucide-react-native/icons/settings';
 import { useMemo } from 'react';
@@ -11,13 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { completionsSince, toggleCompletion } from '@/data/completions';
 import { activeHabitsQuery } from '@/data/habits';
 import type { HabitRow } from '@/data/schema';
-import { usePreferences } from '@/data/settings';
+import { savePreferences, usePreferences } from '@/data/settings';
 import { addDays, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { scheduleOf } from '@/domain/schedule';
 import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
+import { CompactRow } from '@/features/home/compact-row';
 import { useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
@@ -33,7 +36,7 @@ export function HomeScreen() {
   const router = useRouter();
   const today = useToday();
   const breakpoint = useBreakpoint();
-  const { weekStartsOn } = usePreferences();
+  const { weekStartsOn, homeView } = usePreferences();
 
   const windowStart = addDays(today, -(GRID_WEEKS + 1) * 7);
   const { data: habits } = useLiveQuery(activeHabitsQuery);
@@ -56,6 +59,7 @@ export function HomeScreen() {
 
   const total = columns[breakpoint];
   const openForm = () => router.push('/habito/novo');
+  const compacta = homeView === 'compact';
 
   function toggleToday(habit: HabitRow) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -68,6 +72,13 @@ export function HomeScreen() {
         <Text variant="title" style={styles.title}>
           Hábitos
         </Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={compacta ? 'Ver em cards' : 'Ver em lista compacta'}
+          onPress={() => savePreferences({ homeView: compacta ? 'grid' : 'compact' }, new Date())}
+          style={styles.action}>
+          {compacta ? <LayoutGrid size={24} color={color.inkMuted} /> : <List size={24} color={color.inkMuted} />}
+        </PressableScale>
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel="Visão geral"
@@ -92,31 +103,47 @@ export function HomeScreen() {
             {habits.map((habit) => {
               const schedule = scheduleOf(habit);
               const completedDays = completedByHabit.get(habit.id) ?? NO_DAYS;
+              const streak = currentStreak({ schedule, completedDays, today, weekStartsOn });
 
               return (
-                <View key={habit.id} style={[styles.column, { width: `${100 / total}%` }]}>
+                <View
+                  key={habit.id}
+                  style={[
+                    styles.column,
+                    compacta ? styles.columnCompact : null,
+                    { width: `${100 / total}%` },
+                  ]}>
                   <PressableScale
                     accessibilityRole="button"
                     accessibilityLabel={`Abrir ${habit.name}`}
-                    style={styles.card}
+                    style={compacta ? styles.rowShape : styles.card}
                     onPress={() => router.push({ pathname: '/habito/[id]', params: { id: habit.id } })}>
-                    <HabitCard
-                      today={today}
-                      onToggleToday={() => toggleToday(habit)}
-                      habit={{
-                        name: habit.name,
-                        icon: habit.icon,
-                        color: paletteKeyOf(habit.color),
-                        schedule,
-                        completedDays,
-                        currentStreak: currentStreak({
+                    {compacta ? (
+                      <CompactRow
+                        onToggleToday={() => toggleToday(habit)}
+                        habit={{
+                          name: habit.name,
+                          icon: habit.icon,
+                          color: paletteKeyOf(habit.color),
+                          schedule,
+                          currentStreak: streak,
+                          doneToday: completedDays.has(today),
+                        }}
+                      />
+                    ) : (
+                      <HabitCard
+                        today={today}
+                        onToggleToday={() => toggleToday(habit)}
+                        habit={{
+                          name: habit.name,
+                          icon: habit.icon,
+                          color: paletteKeyOf(habit.color),
                           schedule,
                           completedDays,
-                          today,
-                          weekStartsOn,
-                        }),
-                      }}
-                    />
+                          currentStreak: streak,
+                        }}
+                      />
+                    )}
                   </PressableScale>
                 </View>
               );
@@ -151,6 +178,10 @@ const styles = StyleSheet.create({
   columns: { flexDirection: 'row', flexWrap: 'wrap' },
   column: { padding: space.sm },
   card: { borderRadius: radius.xl },
+  /* o brilho do toque precisa ter a forma do que esta embaixo dele */
+  rowShape: { borderRadius: radius.lg },
+  /* a lista compacta respira menos: sao linhas, nao cartoes */
+  columnCompact: { paddingVertical: space.xs },
   fab: {
     position: 'absolute',
     right: space.lg,
