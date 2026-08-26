@@ -66,7 +66,7 @@ compartilhamento social · paywall.
 | 18 | Marcar | Toque no card (home); arrastar (detalhe). Grid da home é só leitura. |
 | 19 | Visão geral | Uma tela, três seções: calendário de anéis, números, matriz hábitos × 30 dias. |
 | 20 | Ajustes | Conta/sync · arquivados + reordenar · export/import JSON · virada do dia e início da semana. |
-| 21 | Widget | Hábito único, 3 tamanhos, toque marca hoje. Lê um snapshot JSON. |
+| 21 | Widget | **Três entradas no seletor**: hábito pequeno, hábito médio e lista compacta. Toque marca hoje. Leem um snapshot JSON. |
 | 22 | Tipografia | Barlow Condensed, família única, 300–700, app inteiro e widget. |
 | 23 | Estilo | StyleSheet + tokens rígidos. **Sem NativeWind.** |
 | 24 | Banco | `expo-sqlite` + Drizzle, schema espelhando o Supabase 1:1. |
@@ -327,11 +327,30 @@ Conta Google e estado do sync ("sincronizado há X min", "sincronizar agora") ·
 (restaurar / excluir de vez) · reordenar hábitos · exportar e importar JSON · virada do dia ·
 primeiro dia da semana · versão.
 
-### 7.6 Widget
-Hábito escolhido na hora de adicionar, numa Activity de configuração própria. **Um widget só,
-redimensionável**, com três desenhos escolhidos pelo tamanho medido: 2×2 (ícone, nome, streak),
-4×2 (+ faixa da semana), 4×4 (matriz de 14 semanas). Toque na bolinha de hoje marca/desmarca com
-atualização otimista, grava no banco pelo headless task e reescreve o snapshot.
+### 7.6 Widgets
+
+**Três entradas no seletor da tela inicial**, cada uma um receiver próprio. Todas leem o mesmo
+snapshot JSON e nenhuma consulta o SQLite para desenhar.
+
+| entrada | grade | conteúdo |
+|---|---|---|
+| Hábito pequeno | 2×1 | ícone, nome e a grade de dias |
+| Hábito médio | 4×1 | ícone, nome, descrição, botão de marcar hoje e a grade larga |
+| Lista compacta | 4×1 | vários hábitos, uma linha por hábito, com os dias da semana no topo |
+
+As duas primeiras pedem o hábito na Activity de configuração, como hoje. A **lista compacta não
+pergunta**: mostra os hábitos ativos por `position`, cortando pelo que couber na altura medida.
+
+A identidade é própria: fundo `surface`, chrome violeta, e a cor do hábito
+só nas bolinhas e no quadrado do ícone. Nada de fundo claro.
+
+Toque na bolinha de hoje marca/desmarca com atualização otimista, grava no banco pelo headless
+task e reescreve o snapshot. Na lista compacta, cada linha marca o seu hábito.
+
+**O que já está pronto para isso:** o snapshot v2 carrega *todos* os hábitos ativos, com a virada
+do dia e o início da semana; `src/widget/lucide-paths.ts` tem a geometria dos ícones; e o handler
+headless já grava e redesenha. O que muda é a rota por `widgetInfo.widgetName`, uma entrada por
+receiver no plugin `react-native-android-widget` em `app.json`, e o desenho de cada layout.
 
 ---
 
@@ -384,6 +403,11 @@ Testes: `sync.ts` (delta, conflito, soft delete, merge do primeiro login).
 ### Fatia 10 · Exportar e importar JSON
 Storage Access Framework, arquivo único, reimportação idempotente.
 
+### Fatia 11 · Três widgets no seletor
+Quebrar o receiver único nas três entradas da 7.6 · configuração só para as duas de hábito único ·
+lista compacta lendo os ativos por `position` · task handler roteando por `widgetName`.
+Testes: seleção e corte da lista no `widget-snapshot.ts`.
+
 ---
 
 ## 9. Dependências externas de você
@@ -404,3 +428,4 @@ Nada disso bloqueia as fatias 0–8.
 | 2026-08-24 | Widget: um receiver redimensionável em vez de três entradas no seletor. Os três tamanhos viraram três layouts sobre o tamanho medido — mesma promessa, sem triplicar o seletor. |
 | 2026-08-24 | Sync: `settings` fica fora do espelho no Postgres. A virada do dia e o primeiro dia da semana são escolha deste aparelho, e a tabela nasceu sem `user_id` e sem `deleted_at` — sincronizá-la seria inventar coluna. O estado do sync é um bloco em Ajustes, como manda a 7.5, e não uma tela própria. |
 | 2026-08-26 | Snapshot do widget vai para a versão 2: a virada do dia e o primeiro dia da semana passam a viajar dentro do arquivo. O headless não tem SQLite garantido, e sem isso o widget desenharia a semana de um jeito e o app de outro. Snapshot v1 é descartado — o app reescreve na primeira abertura. |
+| 2026-08-26 | Widget volta a ser três entradas no seletor, desta vez por decisão de produto e não por limitação: pequeno (2×1), médio (4×1) e lista compacta (4×1) são três coisas diferentes, e escolher pelo tamanho medido escondia a lista — que nem existia. O receiver redimensionável único, decidido em 24/08, sai. |
