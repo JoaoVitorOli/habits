@@ -17,7 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import migrations from '@/data/migrations/migrations';
-import { useAutoSync } from '@/data/sync';
+import { purgeDeleted, useAutoSync } from '@/data/sync';
 import { color } from '@/ui/theme';
 import { useWidgetRefresh } from '@/widget/refresh';
 
@@ -55,6 +55,11 @@ export default function RootLayout() {
   /* o Android perde os alarmes agendados no boot: remontar na abertura e o conserto barato */
   useEffect(() => {
     if (bancoPronto) rescheduleReminders();
+  }, [bancoPronto]);
+
+  /* a linha apagada ha 90 dias ja entregou o recado; varrer na abertura basta, e nada espera */
+  useEffect(() => {
+    if (bancoPronto) purgeDeleted(new Date()).catch(() => {});
   }, [bancoPronto]);
 
   useWidgetRefresh(bancoPronto);

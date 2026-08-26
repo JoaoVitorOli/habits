@@ -61,10 +61,19 @@ export function advance(
   };
 }
 
-export function purgeableIds(rows: Deletable[], now: Date): string[] {
+/**
+ * A purga e do aparelho e nao do sync: sem conta nenhuma, a linha apagada nao e recado para
+ * ninguem e vence sozinha. Com conta, ela so pode sair depois de ter subido — senao o outro
+ * aparelho nunca fica sabendo da exclusao e o habito ressuscita no proximo pull.
+ */
+export function purgeableIds(rows: Deletable[], cursor: Cursor, now: Date): string[] {
   const limit = new Date(now.getTime() - PURGE_AFTER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const pushed = cursor.lastPushedAt;
 
-  return rows.filter((row) => row.deletedAt !== null && row.deletedAt < limit).map((row) => row.id);
+  return rows
+    .filter((row) => row.deletedAt !== null && row.deletedAt < limit)
+    .filter((row) => cursor.userId === null || (pushed !== null && row.updatedAt <= pushed))
+    .map((row) => row.id);
 }
 
 export function syncAgeLabel(lastPulledAt: string | null, now: Date): string {

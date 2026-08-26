@@ -88,19 +88,31 @@ describe('advance', () => {
 
 describe('purgeableIds', () => {
   const agora = new Date('2026-08-24T12:00:00.000Z');
+  const semConta: Cursor = { userId: null, lastPulledAt: null, lastPushedAt: null };
+  const velha = { updatedAt: '2026-01-01T00:00:00.000Z', deletedAt: '2026-01-01T00:00:00.000Z' };
 
   it('purga a linha apagada ha mais de 90 dias', () => {
-    const rows = [{ id: 'a', updatedAt: 'x', deletedAt: '2026-01-01T00:00:00.000Z' }];
-    expect(purgeableIds(rows, agora)).toEqual(['a']);
+    expect(purgeableIds([{ id: 'a', ...velha }], semConta, agora)).toEqual(['a']);
   });
 
   it('segura a exclusao recente: ela ainda e o recado para o outro aparelho', () => {
     const rows = [{ id: 'a', updatedAt: 'x', deletedAt: '2026-08-20T00:00:00.000Z' }];
-    expect(purgeableIds(rows, agora)).toEqual([]);
+    expect(purgeableIds(rows, semConta, agora)).toEqual([]);
   });
 
   it('nunca purga linha viva', () => {
-    expect(purgeableIds([{ id: 'a', updatedAt: 'x', deletedAt: null }], agora)).toEqual([]);
+    expect(purgeableIds([{ id: 'a', updatedAt: 'x', deletedAt: null }], semConta, agora)).toEqual([]);
+  });
+
+  it('com conta, segura o recado que ainda nao subiu: senao o habito ressuscita no pull', () => {
+    expect(purgeableIds([{ id: 'a', ...velha }], { ...conhecido, lastPushedAt: null }, agora)).toEqual([]);
+    expect(
+      purgeableIds([{ id: 'a', ...velha, updatedAt: '2026-08-23T10:00:00.000Z' }], conhecido, agora),
+    ).toEqual([]);
+  });
+
+  it('com conta, solta o recado que ja subiu', () => {
+    expect(purgeableIds([{ id: 'a', ...velha }], conhecido, agora)).toEqual(['a']);
   });
 });
 

@@ -130,23 +130,29 @@ async function syncTable(
     });
   }
 
-  await purge(table, now);
-
   return { pushed, pulled };
 }
 
 /**
  * A linha apagada continua existindo porque ela e o recado que leva a exclusao ao outro
  * aparelho. Passados 90 dias o recado ja chegou, e ai ela sai do banco de verdade.
+ *
+ * Isso e manutencao do aparelho, nao um passo do sync: quem nunca fez login tambem apaga
+ * habito, e antes disso a linha morta ficava aqui para sempre — e ainda viajava em todo
+ * backup exportado.
  */
-async function purge(table: SyncTable, now: Date): Promise<void> {
-  const target = table as typeof habits;
-  const deleted = (await db.select().from(target).where(isNotNull(target.deletedAt))) as unknown as Row[];
+export async function purgeDeleted(now: Date): Promise<void> {
+  const cursor = await readCursor();
 
-  const ids = purgeableIds(deleted, now);
-  if (ids.length === 0) return;
+  for (const table of TABLES) {
+    const target = table as typeof habits;
+    const deleted = (await db.select().from(target).where(isNotNull(target.deletedAt))) as unknown as Row[];
 
-  await db.delete(target).where(inArray(target.id, ids));
+    const ids = purgeableIds(deleted, cursor, now);
+    if (ids.length === 0) continue;
+
+    await db.delete(target).where(inArray(target.id, ids));
+  }
 }
 
 async function readAll(table: SyncTable): Promise<Row[]> {
