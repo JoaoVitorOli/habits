@@ -3,8 +3,8 @@
 App pessoal de acompanhamento de hábitos para Android (celular e tablet), com identidade visual
 própria: escuro, roxo, tipografia condensada.
 
-Não vai para loja. Não tem paywall, onboarding de marketing, telemetria ou conta de terceiros
-além do login opcional do Google.
+Não vai para loja. Não tem paywall, onboarding de marketing, telemetria, conta nem servidor:
+os dados vivem neste aparelho e saem dele só num arquivo que você exporta.
 
 Este documento é a fonte da verdade das decisões. Ele foi produzido por entrevista (`/grill-me`)
 e todas as decisões abaixo foram confirmadas explicitamente.
@@ -32,7 +32,7 @@ agenda por dias da semana ou N vezes por semana · meta diária (`targetPerDay`)
 marcação de hoje e de dias passados · streak atual, recorde e meta de sequência ·
 heatmap estilo GitHub · calendário mensal navegável · nota por dia ·
 tela de visão geral com estatísticas · lembrete diário por hábito ·
-widget na tela inicial com marcação · login Google opcional com sync ·
+widget na tela inicial com marcação ·
 export/import JSON · layout responsivo para tablet.
 
 ### Fora, por decisão
@@ -50,8 +50,8 @@ compartilhamento social · paywall.
 | 2 | Idioma | pt-BR fixo, textos direto no código, sem camada de i18n. |
 | 3 | Tema | Escuro travado (`userInterfaceStyle: "dark"`). Ignora o tema do sistema. |
 | 4 | Persistência | SQLite local é a fonte da verdade. Nunca se lê da rede para renderizar. |
-| 5 | Conta | Login Google via Supabase, **opcional**. Sem login o app é 100% funcional. |
-| 6 | Sync | Delta por `updated_at`, last-write-wins por linha, soft delete. |
+| 5 | Conta | **Não existe.** Sem login, sem servidor, sem rede. |
+| 6 | Backup | Arquivo JSON, exportado e importado à mão. Soft delete para a exclusão viajar no arquivo. |
 | 7 | Tipo de hábito | Binário, com `targetPerDay` opcional (default 1). |
 | 8 | Agenda | `daysOfWeek` (subconjunto) **ou** `timesPerWeek` (N). Dia não agendado é neutro. |
 | 9 | Virada do dia | `dayStartHour` configurável, default **04:00**. |
@@ -65,11 +65,11 @@ compartilhamento social · paywall.
 | 17 | Home | Dois modos: card com grid (padrão) e lista compacta. Preferência persistida. |
 | 18 | Marcar | Toque no card (home); arrastar (detalhe). Grid da home é só leitura. |
 | 19 | Visão geral | Uma tela, três seções: calendário de anéis, números, matriz hábitos × 30 dias. |
-| 20 | Ajustes | Conta/sync · arquivados + reordenar · export/import JSON · virada do dia e início da semana. |
+| 20 | Ajustes | Arquivados + reordenar · export/import JSON · virada do dia e início da semana. |
 | 21 | Widget | **Três entradas no seletor**: hábito pequeno, hábito médio e lista compacta. Toque marca hoje. Leem um snapshot JSON. |
 | 22 | Tipografia | Barlow Condensed, família única, 300–700, app inteiro e widget. |
 | 23 | Estilo | StyleSheet + tokens rígidos. **Sem NativeWind.** |
-| 24 | Banco | `expo-sqlite` + Drizzle, schema espelhando o Supabase 1:1. |
+| 24 | Banco | `expo-sqlite` + Drizzle. Local, sem espelho remoto. |
 | 25 | Testes | Vitest sobre domínio puro. Repositórios e telas fora de teste, por decisão. |
 | 26 | Build | Development build (EAS) obrigatório. Expo Go está fora. |
 
@@ -85,16 +85,16 @@ breakpoint, substituídos por um `useBreakpoint()` de ~20 linhas.
 
 ## 4. Modelo de dados
 
-Mesmo schema nos dois lados (SQLite e Postgres), para que o sync seja um laço burro e não um
-tradutor. Todas as tabelas nascem com `id`, `updated_at` e `deleted_at` **desde a fatia 1**, mesmo
-que o sync só chegue na fatia 9 — assim sync não exige migration, só código novo.
+SQLite, só neste aparelho. Todas as tabelas carregam `id`, `updated_at` e `deleted_at`: a data é
+o que decide qual linha entra quando um backup é importado, e a exclusão suave é o que faz apagar
+aqui apagar também em quem importar o arquivo depois.
 
 ### `habits`
 
 | coluna | tipo | nota |
 |---|---|---|
 | `id` | TEXT PK | UUID v7 (ordenável por tempo) |
-| `user_id` | TEXT NULL | preenchido no primeiro login |
+| `user_id` | TEXT NULL | sempre nulo; sobra do login que existiu e ainda faz parte do arquivo v1 |
 | `name` | TEXT NOT NULL | |
 | `description` | TEXT NULL | |
 | `icon` | TEXT NOT NULL | `lucide:dumbbell` ou `emoji:📚` |
@@ -105,10 +105,10 @@ que o sync só chegue na fatia 9 — assim sync não exige migration, só códig
 | `target_per_day` | INTEGER NOT NULL | default 1 |
 | `streak_goal` | INTEGER NULL | meta de sequência em dias |
 | `reminder_time` | TEXT NULL | `HH:mm` |
-| `position` | INTEGER NOT NULL | ordem na home; sincroniza |
+| `position` | INTEGER NOT NULL | ordem na home |
 | `archived_at` | TEXT NULL | |
 | `created_at` | TEXT NOT NULL | ISO |
-| `updated_at` | TEXT NOT NULL | ISO — chave do sync |
+| `updated_at` | TEXT NOT NULL | ISO — é por ela que a importação decide |
 | `deleted_at` | TEXT NULL | soft delete |
 
 ### `completions`
@@ -126,8 +126,8 @@ que o sync só chegue na fatia 9 — assim sync não exige migration, só códig
 `UNIQUE(habit_id, day)`. Índice em `(habit_id, day)` e em `updated_at`.
 
 > **Refinamento em relação à entrevista.** Na pergunta 3 falei em "uma linha por marcação". Ao
-> desenhar o sync ficou claro que **uma linha por (hábito, dia) com `count`** é estritamente
-> melhor: o toggle vira idempotente, o last-write-wins passa a ter uma linha canônica por dia, e
+> desenhar a fusão de backups ficou claro que **uma linha por (hábito, dia) com `count`** é
+> estritamente melhor: o toggle vira idempotente, a linha por dia é canônica para o merge, e
 > o snapshot do widget sai de um `SELECT` direto. Nada se perde — `completed_at` guarda o horário
 > da última marcação, que é a única coisa que a linha-por-marcação daria a mais.
 
@@ -139,10 +139,6 @@ que o sync só chegue na fatia 9 — assim sync não exige migration, só códig
 
 Linha única (`id = 'local'`): `day_start_hour` (default 4), `week_starts_on` (0 = domingo),
 `home_view` (`grid` | `compact`), `updated_at`.
-
-### `sync_state` — **local, nunca sincroniza**
-
-`user_id` · `last_pulled_at` · `last_pushed_at`.
 
 ---
 
@@ -206,18 +202,16 @@ Gravado em `AsyncStorage` sob `widget.snapshot` a cada mutação (com debounce d
 sempre que o app vai para background. O widget **nunca** consulta o SQLite: o contexto headless
 não garante acesso ao banco.
 
-### 5.6 Sync (`sync.ts`)
+### 5.6 Backup (`backup.ts`, `purge.ts`)
 
-O motor é puro: recebe as linhas locais sujas, as linhas remotas novas e um relógio; devolve o
-que enviar e o que aplicar. Quem fala com a rede é `data/supabase.ts`.
+O arquivo é o único jeito de os dados saírem daqui, e importar não é copiar por cima:
 
-- **push**: linhas com `updated_at > last_pushed_at` → upsert remoto
-- **pull**: linhas remotas com `updated_at > last_pulled_at` → upsert local
-- **conflito**: maior `updated_at` vence, **linha inteira** (sem merge por campo)
-- **delete**: só `deleted_at`. Purga física apenas acima de 90 dias, no aparelho
-- **primeiro login**: todas as linhas locais recebem `user_id` e `updated_at = agora`, e sobem — é
-  um merge, não um "escolha entre local e nuvem"
-- **logout**: dados locais permanecem; `user_id` e `sync_state` são limpos
+- **formato**: JSON versionado, tipos declarados à parte do schema — o arquivo é contrato com o
+  passado, e um arquivo de outra versão é recusado, não adivinhado
+- **conteúdo**: tudo, inclusive linhas apagadas; sem elas a exclusão não viajaria
+- **importar**: entra a linha que não existe aqui ou que é mais recente que a minha, inteira, sem
+  merge por campo. Reimportar o mesmo arquivo não muda nada
+- **excluir**: só `deleted_at`. A purga física vem depois de 90 dias e é manutenção do aparelho
 
 ---
 
@@ -323,9 +317,8 @@ nunca cor de hábito) · linha de números (taxa do mês, melhor streak vivo, di
 matriz hábitos × últimos 30 dias. Tocar num dia abre o resumo daquele dia.
 
 ### 7.5 Ajustes
-Conta Google e estado do sync ("sincronizado há X min", "sincronizar agora") · hábitos arquivados
-(restaurar / excluir de vez) · reordenar hábitos · exportar e importar JSON · virada do dia ·
-primeiro dia da semana · versão.
+Hábitos arquivados (restaurar / excluir de vez) · reordenar hábitos · exportar e importar JSON ·
+virada do dia · primeiro dia da semana · versão.
 
 ### 7.6 Widgets
 
@@ -397,9 +390,9 @@ Calendário de anéis, números, matriz. Testes: dias perfeitos, agregação por
 `react-native-android-widget`, três tamanhos, snapshot JSON, headless task de escrita.
 Testes: `widget-snapshot.ts`.
 
-### Fatia 9 · Login Google e sync
-Supabase auth · schema espelhado · push/pull/merge · tela de estado do sync.
-Testes: `sync.ts` (delta, conflito, soft delete, merge do primeiro login).
+### Fatia 9 · Login Google e sync — **removida**
+Foi construída e depois arrancada em 26/08; veja o registro de mudanças. O que sobrou dela é a
+regra de merge por `updated_at`, que a importação de backup usa, e a purga dos 90 dias.
 
 ### Fatia 10 · Exportar e importar JSON
 Storage Access Framework, arquivo único, reimportação idempotente.
@@ -413,11 +406,9 @@ Testes: seleção e corte da lista no `widget-snapshot.ts`.
 
 ## 9. Dependências externas de você
 
-Nada disso bloqueia as fatias 0–8.
+Nada disso bloqueia nenhuma fatia depois da 0.
 
 - **Conta EAS** para gerar o development build — fatia 0
-- **Projeto Supabase**: `URL` e `anon key` — fatia 9
-- **Google OAuth Client ID** no Google Cloud Console, com o SHA-1 do development build — fatia 9
 
 ---
 
@@ -432,3 +423,4 @@ Nada disso bloqueia as fatias 0–8.
 | 2026-08-26 | Widget volta a ser três entradas no seletor, desta vez por decisão de produto e não por limitação: pequeno (2×1), médio (4×1) e lista compacta (4×1) são três coisas diferentes, e escolher pelo tamanho medido escondia a lista — que nem existia. O receiver redimensionável único, decidido em 24/08, sai. |
 | 2026-08-26 | Snapshot do widget vai para a versão 3: a descrição do hábito passa a viajar no arquivo, porque o widget médio a mostra e o headless não tem SQLite para perguntar. O snapshot também passa a sair do banco na ordem de `position` — a lista compacta desenha nessa ordem e nenhuma outra. Snapshot v2 é descartado; o app reescreve na primeira abertura. |
 | 2026-08-26 | A bolinha de hoje marca e desmarca nos três widgets, e não só o botão do médio. É o alvo que a lista compacta já teria de ter — uma linha por hábito não comporta um botão de 48dp — e repeti-lo nos outros dois evita que a mesma bolinha signifique coisas diferentes em cada entrada do seletor. |
+| 2026-08-26 | Login Google e sync saem do app. O login parou de funcionar no APK assinado localmente e, olhando para o que ele custava — Supabase, OAuth, SHA-1 por keystore, uma tabela de cursor, um motor de merge e uma cópia semanal na conta —, a resposta honesta é que um app de hábitos de uma pessoa só não precisa de servidor. Backup passa a ser só o arquivo JSON, exportado e importado à mão. Ficam de pé o `updated_at` (a importação decide por ele), o soft delete (é assim que a exclusão viaja no arquivo) e a purga dos 90 dias, agora manutenção do aparelho. A coluna `user_id` fica na tabela, sempre nula: ela faz parte do formato v1 do arquivo, e tirá-la invalidaria todo backup já exportado. |

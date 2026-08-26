@@ -15,10 +15,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { db } from '@/data/db';
-import { rescheduleReminders } from '@/data/notifications';
+import { purgeDeleted } from '@/data/maintenance';
 import migrations from '@/data/migrations/migrations';
-import { useWeeklyBackup } from '@/data/cloud-backup';
-import { purgeDeleted, useAutoSync } from '@/data/sync';
+import { rescheduleReminders } from '@/data/notifications';
 import { duration } from '@/ui/motion';
 import { color } from '@/ui/theme';
 import { useWidgetRefresh } from '@/widget/refresh';
@@ -68,8 +67,6 @@ export default function RootLayout() {
   }, [bancoPronto]);
 
   useWidgetRefresh(bancoPronto);
-  useAutoSync(bancoPronto);
-  useWeeklyBackup(bancoPronto);
 
   if (!pronto) return null;
 

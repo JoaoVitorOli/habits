@@ -46,7 +46,6 @@ module.exports = defineConfig([
                 '@expo/*',
                 'drizzle-orm',
                 'drizzle-orm/*',
-                '@supabase/*',
                 '@/data/*',
                 '@/ui/*',
                 '@/features/*',

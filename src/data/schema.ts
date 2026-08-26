@@ -1,8 +1,8 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
- * Espelha o Postgres do Supabase 1:1. `updated_at` e `deleted_at` nascem aqui, na fatia 1,
- * mesmo que o sync so chegue na fatia 9: assim sync nao exige migration, so codigo novo.
+ * `updated_at` e `deleted_at` em toda tabela que viaja no backup: a exclusao precisa viajar
+ * como linha, senao importar um arquivo antigo ressuscitaria o que voce apagou.
  */
 export const habits = sqliteTable(
   'habits',
@@ -64,14 +64,6 @@ export const settings = sqliteTable('settings', {
   weekStartsOn: integer('week_starts_on').notNull().default(0),
   homeView: text('home_view').notNull().default('grid'),
   updatedAt: text('updated_at').notNull(),
-});
-
-/** Local, nunca sincroniza. */
-export const syncState = sqliteTable('sync_state', {
-  id: text('id').primaryKey(),
-  userId: text('user_id'),
-  lastPulledAt: text('last_pulled_at'),
-  lastPushedAt: text('last_pushed_at'),
 });
 
 export type HabitRow = typeof habits.$inferSelect;

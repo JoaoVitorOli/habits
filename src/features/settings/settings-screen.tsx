@@ -3,7 +3,6 @@ import { useRouter, type Href } from 'expo-router';
 import Archive from 'lucide-react-native/icons/archive';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import CircleUser from 'lucide-react-native/icons/circle-user';
 import DatabaseBackup from 'lucide-react-native/icons/database-backup';
 import Sunrise from 'lucide-react-native/icons/sunrise';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -18,12 +17,6 @@ import { color, radius, space } from '@/ui/theme';
  * empilhados, e o proximo assunto so piorava a pilha.
  */
 const pages = [
-  {
-    href: '/ajustes/conta' as Href,
-    icon: CircleUser,
-    title: 'Conta',
-    hint: 'Login do Google e estado do sync',
-  },
   {
     href: '/ajustes/habitos' as Href,
     icon: Archive,
@@ -40,7 +33,7 @@ const pages = [
     href: '/ajustes/backup' as Href,
     icon: DatabaseBackup,
     title: 'Backup',
-    hint: 'Arquivo JSON e cópia na conta',
+    hint: 'Exportar e importar o arquivo JSON',
   },
 ];
 

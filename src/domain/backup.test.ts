@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBackup, isBackupDue, parseBackup, rowsToImport, rowsToRestore } from './backup';
+import { buildBackup, parseBackup, rowsToApply, rowsToImport, type Versioned } from './backup';
 
 const vazio = { habits: [], completions: [], dayNotes: [] };
 
@@ -67,41 +67,32 @@ describe('rowsToImport', () => {
   });
 });
 
-describe('rowsToRestore', () => {
-  const agora = new Date('2026-08-26T12:00:00.000Z');
+const local: Versioned[] = [
+  { id: 'a', updatedAt: '2026-08-20T10:00:00.000Z' },
+  { id: 'b', updatedAt: '2026-08-23T10:00:00.000Z' },
+];
 
-  it('a linha do backup vence a local mais nova: e isso que restaurar quer dizer', () => {
-    const local = [{ id: 'a', name: 'Treino apagado', updatedAt: '2026-08-25T00:00:00.000Z' }];
-    const backup = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-01T00:00:00.000Z' }];
-
-    expect(rowsToRestore(local, backup, agora)).toEqual([
-      { id: 'a', name: 'Treino', updatedAt: '2026-08-26T12:00:00.000Z' },
-    ]);
+describe('rowsToApply', () => {
+  it('traz a linha que nao existe aqui', () => {
+    const nova = { id: 'c', updatedAt: '2026-08-01T10:00:00.000Z' };
+    expect(rowsToApply(local, [nova])).toEqual([nova]);
   });
 
-  it('deixa de fora o que ja esta igual, para nao reescrever o banco inteiro', () => {
-    const local = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-25T00:00:00.000Z' }];
-    const backup = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-01T00:00:00.000Z' }];
-
-    expect(rowsToRestore(local, backup, agora)).toEqual([]);
+  it('no conflito, a linha mais recente vence', () => {
+    const doArquivo = { id: 'a', updatedAt: '2026-08-24T10:00:00.000Z' };
+    expect(rowsToApply(local, [doArquivo])).toEqual([doArquivo]);
   });
 
-  it('nao apaga o que nasceu depois do backup', () => {
-    const local = [{ id: 'novo', name: 'Leitura', updatedAt: '2026-08-25T00:00:00.000Z' }];
-
-    expect(rowsToRestore(local, [], agora)).toEqual([]);
-  });
-});
-
-describe('isBackupDue', () => {
-  const agora = new Date('2026-08-26T12:00:00.000Z');
-
-  it('cobra o primeiro backup', () => {
-    expect(isBackupDue(null, agora)).toBe(true);
+  it('no conflito, a local mais recente fica', () => {
+    expect(rowsToApply(local, [{ id: 'b', updatedAt: '2026-08-21T10:00:00.000Z' }])).toEqual([]);
   });
 
-  it('espera uma semana entre copias', () => {
-    expect(isBackupDue('2026-08-25T12:00:00.000Z', agora)).toBe(false);
-    expect(isBackupDue('2026-08-19T12:00:00.000Z', agora)).toBe(true);
+  it('a exclusao viaja como linha: deletedAt mais novo entra', () => {
+    const apagada = { id: 'b', updatedAt: '2026-08-24T10:00:00.000Z', deletedAt: '2026-08-24T10:00:00.000Z' };
+    expect(rowsToApply(local, [apagada])).toEqual([apagada]);
+  });
+
+  it('importar o mesmo arquivo duas vezes nao aplica nada na segunda', () => {
+    expect(rowsToApply(local, local)).toEqual([]);
   });
 });

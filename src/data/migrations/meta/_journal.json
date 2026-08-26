@@ -8,6 +8,13 @@
       "when": 1787595203699,
       "tag": "0000_wealthy_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787766202733,
+      "tag": "0001_brown_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

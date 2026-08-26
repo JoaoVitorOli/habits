@@ -16,14 +16,14 @@ O SDK mudou; conhecimento de versões anteriores está errado com frequência.
 
 ```
 src/domain/    puro. Sem React, sem banco, sem UI, sem Date.now(). É o que tem teste.
-src/data/      adapters finos: Drizzle, Supabase, notificações. Sem regra de negócio.
+src/data/      adapters finos: Drizzle, arquivos, notificações. Sem regra de negócio.
 src/ui/        design system fechado. Sem regra de negócio, sem acesso a dados.
 src/features/  telas compostas, uma pasta por tela.
 src/app/       rotas do expo-router. Finas: só montam a feature correspondente.
 src/widget/    react-native-android-widget.
 ```
 
-- **`src/domain/` não importa `react`, `react-native`, `drizzle`, `@supabase`, nem nada de
+- **`src/domain/` não importa `react`, `react-native`, `drizzle`, nem nada de
   `src/data`, `src/ui`, `src/features`, `src/app`.** Isso é validado por lint. Se você precisa
   quebrar essa regra, o desenho está errado, não a regra.
 - **Relógio é parâmetro, nunca global.** Nenhuma função de domínio chama `Date.now()` ou
@@ -202,8 +202,8 @@ Dispare no **mesmo frame** do visual, no momento causal — não quando a anima�
 
 ## 10. Testes
 
-TDD nos seams acordados, e **só** neles: `calendar`, `schedule`, `streak`, `stats`, `sync`,
-`widget-snapshot`. Vitest, sobre funções puras, com relógio injetado.
+TDD nos seams acordados, e **só** neles: `calendar`, `schedule`, `streak`, `stats`, `backup`,
+`purge`, `widget-snapshot`. Vitest, sobre funções puras, com relógio injetado.
 
 - Vermelho antes de verde. Um teste, uma implementação mínima, repete.
 - Fatia vertical, nunca horizontal: não escreva todos os testes antes de todo o código.
