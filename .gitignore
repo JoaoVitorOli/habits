@@ -44,5 +44,7 @@ example
 /ios
 /android
 
-# skills (symlinks/junctions gerados por `npx skills`; o conteudo real vive em .agents/)
+# skills: conteudo de terceiros, reconstruido por `npx skills` a partir do skills-lock.json.
+# Fora do git para nao redistribuir o trabalho de outros sob a licenca deste repositorio.
+.agents/
 .claude/skills/
