@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
@@ -14,6 +15,8 @@ const VISIBLE = 5;
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 const MINUTES = Array.from({ length: 12 }, (_, step) => step * 5);
 
+const DEFAULT_TIME: Time = { hour: 8, minute: 0 };
+
 type Props = {
   visible: boolean;
   value: Time | null;
@@ -24,7 +27,14 @@ type Props = {
 
 export function TimePickerDialog({ visible, value, onConfirm, onRemove, onClose }: Props) {
   const { mounted, progress } = useOverlayTransition(visible);
-  const [time, setTime] = useState<Time>(value ?? { hour: 8, minute: 0 });
+  const [time, setTime] = useState<Time>(value ?? DEFAULT_TIME);
+  const [opened, setOpened] = useState(visible);
+
+  /* o dialogo fica montado entre uma abertura e outra: sem isso ele reabriria no horario velho */
+  if (visible !== opened) {
+    setOpened(visible);
+    if (visible) setTime(value ?? DEFAULT_TIME);
+  }
 
   const backdrop = useAnimatedStyle(() => ({ opacity: progress.get() * 0.7 }));
 
@@ -38,51 +48,55 @@ export function TimePickerDialog({ visible, value, onConfirm, onRemove, onClose 
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.fill} onPress={onClose} accessibilityLabel="Fechar">
+      <View style={styles.fill}>
+        {/*
+          Fechar tocando fora e um irmao do card, nunca um pai dele. Como Pressable vira o
+          responder no toque, o Android bloqueia a rolagem nativa de qualquer ScrollView que
+          esteja embaixo — era isso que travava as rodas: o dedo arrastava e nada se movia.
+        */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Fechar" />
         <Animated.View style={[styles.backdrop, backdrop]} pointerEvents="none" />
 
         <View style={styles.center} pointerEvents="box-none">
-          <Pressable onPress={() => undefined} style={styles.wrapper}>
-            <Animated.View style={[styles.card, card]}>
-              <View style={styles.words}>
-                <Text variant="heading">Lembrete</Text>
-                <Text variant="body" tone="inkMuted">
-                  Só nos dias em que o hábito está agendado.
-                </Text>
-              </View>
+          <Animated.View style={[styles.card, card]}>
+            <View style={styles.words}>
+              <Text variant="heading">Lembrete</Text>
+              <Text variant="body" tone="inkMuted">
+                Só nos dias em que o hábito está agendado.
+              </Text>
+            </View>
 
-              <View style={styles.wheels}>
-                <View style={styles.band} pointerEvents="none" />
-                <Wheel
-                  label="hora"
-                  values={HOURS}
-                  value={time.hour}
-                  onChange={(hour) => setTime((current) => ({ ...current, hour }))}
-                />
-                <Text variant="heading" tone="inkMuted">
-                  :
-                </Text>
-                <Wheel
-                  label="minuto"
-                  values={MINUTES}
-                  value={time.minute}
-                  onChange={(minute) => setTime((current) => ({ ...current, minute }))}
-                />
-              </View>
+            <View style={styles.wheels}>
+              <View style={styles.band} pointerEvents="none" />
+              <Wheel
+                label="hora"
+                values={HOURS}
+                value={time.hour}
+                onChange={(hour) => setTime((current) => ({ ...current, hour }))}
+              />
+              <Text variant="heading" tone="inkMuted">
+                :
+              </Text>
+              <Wheel
+                label="minuto"
+                values={MINUTES}
+                value={time.minute}
+                onChange={(minute) => setTime((current) => ({ ...current, minute }))}
+              />
+            </View>
 
-              <View style={styles.actions}>
-                <Button
-                  label={value === null ? 'Cancelar' : 'Remover'}
-                  variant="ghost"
-                  onPress={value === null ? onClose : onRemove}
-                  style={styles.action}
-                />
-                <Button label={formatTime(time)} onPress={() => onConfirm(time)} style={styles.action} />
-              </View>
-            </Animated.View>
-          </Pressable>
+            <View style={styles.actions}>
+              <Button
+                label={value === null ? 'Cancelar' : 'Remover'}
+                variant="ghost"
+                onPress={value === null ? onClose : onRemove}
+                style={styles.action}
+              />
+              <Button label={formatTime(time)} onPress={() => onConfirm(time)} style={styles.action} />
+            </View>
+          </Animated.View>
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
@@ -96,17 +110,21 @@ type WheelProps = {
 
 function Wheel({ label, values, value, onChange }: WheelProps) {
   const scroller = useRef<ScrollView>(null);
-  const start = useRef(values.indexOf(value));
+  const target = Math.max(0, values.indexOf(value));
+
+  /* dentro do Modal o layout so existe depois da montagem: alinhar no efeito chegava cedo demais */
+  function align() {
+    scroller.current?.scrollTo({ y: target * ITEM, animated: false });
+  }
 
   function settle(offset: number) {
     const index = Math.round(offset / ITEM);
     const next = values[Math.min(values.length - 1, Math.max(0, index))];
-    if (next !== value) onChange(next);
-  }
+    if (next === value) return;
 
-  useEffect(() => {
-    scroller.current?.scrollTo({ y: Math.max(0, start.current) * ITEM, animated: false });
-  }, []);
+    Haptics.selectionAsync();
+    onChange(next);
+  }
 
   return (
     <ScrollView
@@ -117,6 +135,7 @@ function Wheel({ label, values, value, onChange }: WheelProps) {
       snapToInterval={ITEM}
       decelerationRate="fast"
       contentContainerStyle={styles.wheelContent}
+      onContentSizeChange={align}
       /* nada de setState por frame de rolagem: so quando o giro para. Arrastar devagar
          nao gera momento e o onMomentumScrollEnd nunca chega, entao o fim do arrasto conta. */
       onScrollEndDrag={(event) => settle(event.nativeEvent.contentOffset.y)}
@@ -145,8 +164,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: space.lg,
   },
-  wrapper: { width: '100%', maxWidth: 420 },
   card: {
+    width: '100%',
+    maxWidth: 420,
     backgroundColor: color.surfaceOverlay,
     borderRadius: radius.xl,
     borderTopWidth: 1,
