@@ -4,8 +4,8 @@ import { Directory, File } from 'expo-file-system';
 import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits } from '@/data/schema';
-import { buildBackup, parseBackup, type Backup } from '@/domain/backup';
-import { rowsToApply } from '@/domain/sync';
+import { readCursor } from '@/data/sync';
+import { buildBackup, parseBackup, rowsToImport, type Backup } from '@/domain/backup';
 import { refreshWidgets } from '@/widget/refresh';
 
 export type ImportSummary = {
@@ -47,22 +47,25 @@ export async function importBackup(): Promise<ImportSummary | null> {
   if (!parsed.ok) throw new Error(parsed.reason);
 
   const local = await readEverything();
+  const now = new Date();
+  // o dono e sempre o desta sessao: o `user_id` do arquivo pode ser de outra conta, ou de nenhuma
+  const { userId } = await readCursor();
   const summary: ImportSummary = { habits: 0, completions: 0, dayNotes: 0 };
 
   await db.transaction(async (tx) => {
-    for (const row of rowsToApply(local.habits, parsed.backup.habits)) {
+    for (const row of rowsToImport(local.habits, parsed.backup.habits, now)) {
       await tx.delete(habits).where(inArray(habits.id, [row.id]));
-      await tx.insert(habits).values(row);
+      await tx.insert(habits).values({ ...row, userId });
       summary.habits++;
     }
 
-    for (const row of rowsToApply(local.completions, parsed.backup.completions)) {
+    for (const row of rowsToImport(local.completions, parsed.backup.completions, now)) {
       await tx.delete(completions).where(inArray(completions.id, [row.id]));
       await tx.insert(completions).values(row);
       summary.completions++;
     }
 
-    for (const row of rowsToApply(local.dayNotes, parsed.backup.dayNotes)) {
+    for (const row of rowsToImport(local.dayNotes, parsed.backup.dayNotes, now)) {
       await tx.delete(dayNotes).where(inArray(dayNotes.id, [row.id]));
       await tx.insert(dayNotes).values(row);
       summary.dayNotes++;

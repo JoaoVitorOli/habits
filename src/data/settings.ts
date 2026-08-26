@@ -4,7 +4,6 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { db } from '@/data/db';
 import { settings } from '@/data/schema';
 import { preferencesOf, type Preferences } from '@/domain/preferences';
-import { refreshWidgets } from '@/widget/refresh';
 
 /** Linha unica: a preferencia e deste aparelho, nao da conta. Por isso fica fora do sync. */
 const LOCAL = 'local';
@@ -27,7 +26,4 @@ export async function savePreferences(patch: Partial<Preferences>, now: Date): P
   const next = { ...(await readPreferences()), ...patch, updatedAt: now.toISOString() };
 
   await db.insert(settings).values({ id: LOCAL, ...next }).onConflictDoUpdate({ target: settings.id, set: next });
-
-  // a virada e o inicio da semana viajam dentro do snapshot: o widget precisa ser reescrito
-  refreshWidgets();
 }

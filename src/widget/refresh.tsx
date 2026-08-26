@@ -1,6 +1,6 @@
 import { requestWidgetUpdate } from 'react-native-android-widget';
 
-import { readPreferences } from '@/data/settings';
+import { readPreferences, usePreferences } from '@/data/settings';
 import { saveWidgetSnapshot, widgetHabitId } from '@/data/widget';
 import { logicalDay, type Day } from '@/domain/calendar';
 import { DEFAULT_PREFERENCES } from '@/domain/preferences';
@@ -57,6 +57,8 @@ export async function drawWidgets(snapshot: WidgetSnapshot | null, today: Day): 
  */
 export function useWidgetRefresh(enabled: boolean): void {
   const today = useToday();
+  // a virada e o inicio da semana viajam dentro do snapshot: mexer neles reescreve o arquivo
+  const { dayStartHour, weekStartsOn } = usePreferences();
 
   useEffect(() => {
     // o snapshot sai de um SELECT: antes das migrations nao ha o que selecionar
@@ -69,5 +71,5 @@ export function useWidgetRefresh(enabled: boolean): void {
     });
 
     return () => subscription.remove();
-  }, [enabled, today]);
+  }, [enabled, today, dayStartHour, weekStartsOn]);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBackup, parseBackup } from './backup';
+import { buildBackup, parseBackup, rowsToImport } from './backup';
 
 const vazio = { habits: [], completions: [], dayNotes: [] };
 
@@ -39,3 +39,30 @@ describe('parseBackup', () => {
   });
 });
 
+
+describe('rowsToImport', () => {
+  const local = [{ id: 'a', updatedAt: '2026-08-20T00:00:00.000Z' }];
+  const agora = new Date('2026-08-26T12:00:00.000Z');
+
+  it('carimba agora na linha que entra, para ela ainda subir no proximo sync', () => {
+    const incoming = [{ id: 'b', updatedAt: '2026-01-01T00:00:00.000Z' }];
+
+    expect(rowsToImport(local, incoming, agora)).toEqual([
+      { id: 'b', updatedAt: '2026-08-26T12:00:00.000Z' },
+    ]);
+  });
+
+  it('nao encosta na linha local mais nova que a do arquivo', () => {
+    const incoming = [{ id: 'a', updatedAt: '2026-08-19T00:00:00.000Z' }];
+
+    expect(rowsToImport(local, incoming, agora)).toEqual([]);
+  });
+
+  it('e idempotente: reimportar o mesmo arquivo nao aplica nada', () => {
+    const incoming = [{ id: 'c', updatedAt: '2026-08-25T00:00:00.000Z' }];
+    const primeira = rowsToImport(local, incoming, agora);
+
+    expect(primeira).toHaveLength(1);
+    expect(rowsToImport([...local, ...primeira], incoming, agora)).toEqual([]);
+  });
+});

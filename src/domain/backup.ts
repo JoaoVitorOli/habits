@@ -1,4 +1,4 @@
-import type { Versioned } from './sync';
+import { rowsToApply, type Versioned } from './sync';
 
 /**
  * Formato do arquivo de backup. Os tipos sao declarados aqui de novo, e nao reaproveitados
@@ -87,6 +87,19 @@ export function parseBackup(text: string): ParseResult {
   }
 
   return { ok: true, backup: backup as Backup };
+}
+
+/**
+ * Importar nao e copiar o arquivo por cima: a linha escolhida entra com a data de agora.
+ *
+ * Sem isso ela nascia velha — mais antiga que o `last_pushed_at` deste aparelho — e o sync
+ * nunca mais a enviava, deixando o que foi importado preso aqui para sempre. Reimportar o
+ * mesmo arquivo continua nao mudando nada: a copia local passa a ser a mais recente das duas.
+ */
+export function rowsToImport<T extends Versioned>(local: T[], incoming: T[], at: Date): T[] {
+  const stamp = at.toISOString();
+
+  return rowsToApply(local, incoming).map((row) => ({ ...row, updatedAt: stamp }));
 }
 
 function isRowList(value: unknown): value is Versioned[] {
