@@ -17,6 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import migrations from '@/data/migrations/migrations';
+import { useWeeklyBackup } from '@/data/cloud-backup';
 import { purgeDeleted, useAutoSync } from '@/data/sync';
 import { duration } from '@/ui/motion';
 import { color } from '@/ui/theme';
@@ -68,6 +69,7 @@ export default function RootLayout() {
 
   useWidgetRefresh(bancoPronto);
   useAutoSync(bancoPronto);
+  useWeeklyBackup(bancoPronto);
 
   if (!pronto) return null;
 

@@ -6,6 +6,7 @@ import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits } from '@/data/schema';
 import { readCursor } from '@/data/sync';
 import { buildBackup, parseBackup, rowsToImport, type Backup } from '@/domain/backup';
+import type { Versioned } from '@/domain/sync';
 import { toDay } from '@/domain/calendar';
 import { refreshWidgets } from '@/widget/refresh';
 
@@ -16,7 +17,7 @@ export type ImportSummary = {
 };
 
 /** O backup leva tudo, inclusive linhas apagadas: senao a exclusao nao viajaria junto. */
-async function readEverything(): Promise<Omit<Backup, 'v' | 'exportedAt'>> {
+export async function readEverything(): Promise<Omit<Backup, 'v' | 'exportedAt'>> {
   const [habitRows, completionRows, noteRows] = await Promise.all([
     db.select().from(habits),
     db.select().from(completions),
@@ -71,26 +72,35 @@ export async function importBackup(): Promise<ImportSummary | null> {
 
   if (!parsed.ok) throw new Error(parsed.reason);
 
+  return applyBackup(parsed.backup, rowsToImport, new Date());
+}
+
+/**
+ * Como a regra escolhe as linhas e o que separa importar de restaurar; o resto — apagar, inserir,
+ * contar, reagendar lembrete e reescrever o widget — e igual nos dois, e mora aqui.
+ */
+export type MergeRule = <T extends Versioned>(local: T[], incoming: T[], at: Date) => T[];
+
+export async function applyBackup(backup: Backup, merge: MergeRule, now: Date): Promise<ImportSummary> {
   const local = await readEverything();
-  const now = new Date();
-  // o dono e sempre o desta sessao: o `user_id` do arquivo pode ser de outra conta, ou de nenhuma
+  // o dono e sempre o desta sessao: o `user_id` do backup pode ser de outra conta, ou de nenhuma
   const { userId } = await readCursor();
   const summary: ImportSummary = { habits: 0, completions: 0, dayNotes: 0 };
 
   await db.transaction(async (tx) => {
-    for (const row of rowsToImport(local.habits, parsed.backup.habits, now)) {
+    for (const row of merge(local.habits, backup.habits, now)) {
       await tx.delete(habits).where(inArray(habits.id, [row.id]));
       await tx.insert(habits).values({ ...row, userId });
       summary.habits++;
     }
 
-    for (const row of rowsToImport(local.completions, parsed.backup.completions, now)) {
+    for (const row of merge(local.completions, backup.completions, now)) {
       await tx.delete(completions).where(inArray(completions.id, [row.id]));
       await tx.insert(completions).values(row);
       summary.completions++;
     }
 
-    for (const row of rowsToImport(local.dayNotes, parsed.backup.dayNotes, now)) {
+    for (const row of merge(local.dayNotes, backup.dayNotes, now)) {
       await tx.delete(dayNotes).where(inArray(dayNotes.id, [row.id]));
       await tx.insert(dayNotes).values(row);
       summary.dayNotes++;

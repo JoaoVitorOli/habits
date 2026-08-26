@@ -77,18 +77,24 @@ export function purgeableIds(rows: Deletable[], cursor: Cursor, now: Date): stri
 }
 
 export function syncAgeLabel(lastPulledAt: string | null, now: Date): string {
-  if (lastPulledAt === null) return 'Nunca sincronizado';
+  const age = ageLabel(lastPulledAt, now);
+  return age === null ? 'Nunca sincronizado' : `Sincronizado ${age}`;
+}
 
-  const minutes = Math.floor((now.getTime() - new Date(lastPulledAt).getTime()) / 60_000);
+/** `null` quando nunca aconteceu. Duas telas contam idade; a conta e uma so. */
+export function ageLabel(at: string | null, now: Date): string | null {
+  if (at === null) return null;
 
-  if (minutes < 1) return 'Sincronizado agora';
-  if (minutes < 60) return `Sincronizado há ${minutes} min`;
+  const minutes = Math.floor((now.getTime() - new Date(at).getTime()) / 60_000);
+
+  if (minutes < 1) return 'agora';
+  if (minutes < 60) return `há ${minutes} min`;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Sincronizado há ${hours} h`;
+  if (hours < 24) return `há ${hours} h`;
 
   const days = Math.floor(hours / 24);
-  return `Sincronizado há ${days} ${days === 1 ? 'dia' : 'dias'}`;
+  return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
 }
 
 function latestOf(current: string | null, rows: Versioned[]): string | null {

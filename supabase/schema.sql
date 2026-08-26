@@ -71,3 +71,17 @@ create policy "notas seguem o habito" on day_notes
   ) with check (
     exists (select 1 from habits h where h.id = habit_id and h.user_id = auth.uid()::text)
   );
+
+-- Copia de seguranca da conta: uma linha por usuario, trocada inteira a cada backup.
+-- Nao e o sync — o sync espelha o estado de agora, e este e o estado de um dia especifico,
+-- para quando o "agora" estiver errado e ja tiver viajado para os outros aparelhos.
+create table if not exists backups (
+  user_id text primary key,
+  payload jsonb not null,
+  updated_at text not null
+);
+
+alter table backups enable row level security;
+
+create policy "backup e do dono" on backups
+  for all using (user_id = auth.uid()::text) with check (user_id = auth.uid()::text);

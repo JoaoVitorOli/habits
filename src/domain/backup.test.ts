@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBackup, parseBackup, rowsToImport } from './backup';
+import { buildBackup, isBackupDue, parseBackup, rowsToImport, rowsToRestore } from './backup';
 
 const vazio = { habits: [], completions: [], dayNotes: [] };
 
@@ -64,5 +64,44 @@ describe('rowsToImport', () => {
 
     expect(primeira).toHaveLength(1);
     expect(rowsToImport([...local, ...primeira], incoming, agora)).toEqual([]);
+  });
+});
+
+describe('rowsToRestore', () => {
+  const agora = new Date('2026-08-26T12:00:00.000Z');
+
+  it('a linha do backup vence a local mais nova: e isso que restaurar quer dizer', () => {
+    const local = [{ id: 'a', name: 'Treino apagado', updatedAt: '2026-08-25T00:00:00.000Z' }];
+    const backup = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-01T00:00:00.000Z' }];
+
+    expect(rowsToRestore(local, backup, agora)).toEqual([
+      { id: 'a', name: 'Treino', updatedAt: '2026-08-26T12:00:00.000Z' },
+    ]);
+  });
+
+  it('deixa de fora o que ja esta igual, para nao reescrever o banco inteiro', () => {
+    const local = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-25T00:00:00.000Z' }];
+    const backup = [{ id: 'a', name: 'Treino', updatedAt: '2026-08-01T00:00:00.000Z' }];
+
+    expect(rowsToRestore(local, backup, agora)).toEqual([]);
+  });
+
+  it('nao apaga o que nasceu depois do backup', () => {
+    const local = [{ id: 'novo', name: 'Leitura', updatedAt: '2026-08-25T00:00:00.000Z' }];
+
+    expect(rowsToRestore(local, [], agora)).toEqual([]);
+  });
+});
+
+describe('isBackupDue', () => {
+  const agora = new Date('2026-08-26T12:00:00.000Z');
+
+  it('cobra o primeiro backup', () => {
+    expect(isBackupDue(null, agora)).toBe(true);
+  });
+
+  it('espera uma semana entre copias', () => {
+    expect(isBackupDue('2026-08-25T12:00:00.000Z', agora)).toBe(false);
+    expect(isBackupDue('2026-08-19T12:00:00.000Z', agora)).toBe(true);
   });
 });
