@@ -37,6 +37,7 @@ export function EditHabitScreen({ id }: { id: string }) {
         icon: habit.icon,
         color: paletteKeyOf(habit.color),
         schedule: scheduleOf(habit),
+        targetPerDay: habit.targetPerDay,
         streakGoal: habit.streakGoal,
         reminderTime: habit.reminderTime,
       }}

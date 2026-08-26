@@ -24,12 +24,17 @@ import { color, palette, radius, space } from '@/ui/theme';
 
 const NO_DAYS: ReadonlySet<string> = new Set();
 
+/** O habito e binario: a meta diaria repete o mesmo gesto, nao vira contador de quantidade. */
+const MIN_TARGET = 1;
+const MAX_TARGET = 10;
+
 export type HabitFormValues = {
   name: string;
   description: string;
   icon: string;
   color: PaletteKey;
   schedule: Schedule;
+  targetPerDay: number;
   streakGoal: number | null;
   reminderTime: string | null;
 };
@@ -40,6 +45,7 @@ export const emptyHabitForm: HabitFormValues = {
   icon: 'lucide:dumbbell',
   color: defaultPaletteKey,
   schedule: { kind: 'daysOfWeek', days: 127 },
+  targetPerDay: 1,
   streakGoal: null,
   reminderTime: null,
 };
@@ -61,6 +67,7 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
   const [icon, setIcon] = useState(initial.icon);
   const [paletteKey, setPaletteKey] = useState<PaletteKey>(initial.color);
   const [schedule, setSchedule] = useState<Schedule>(initial.schedule);
+  const [targetPerDay, setTargetPerDay] = useState(initial.targetPerDay);
   const [streakGoal, setStreakGoal] = useState<number | null>(initial.streakGoal);
   const [reminderTime, setReminderTime] = useState<string | null>(initial.reminderTime);
   const [reminderOpen, setReminderOpen] = useState(false);
@@ -80,7 +87,7 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
         icon,
         color: paletteKey,
         schedule,
-        targetPerDay: 1,
+        targetPerDay,
         streakGoal,
         reminderTime,
       });
@@ -133,6 +140,53 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
           <IconPicker value={icon} accent={paletteKey} onChange={setIcon} />
           <ColorPicker value={paletteKey} onChange={setPaletteKey} />
           <SchedulePicker value={schedule} onChange={setSchedule} />
+
+          <View style={styles.group}>
+            <Text variant="label" tone="inkFaint">
+              Meta diária
+            </Text>
+            <Text variant="caption" tone="inkFaint">
+              Quantas marcações o dia precisa para contar como cumprido.
+            </Text>
+            <View style={styles.stepper}>
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Menos uma marcação por dia"
+                disabled={targetPerDay <= MIN_TARGET}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTargetPerDay(Math.max(MIN_TARGET, targetPerDay - 1));
+                }}
+                style={styles.stepButton}>
+                <Text variant="heading" tone={targetPerDay <= MIN_TARGET ? 'inkDisabled' : 'ink'}>
+                  −
+                </Text>
+              </PressableScale>
+
+              <View style={styles.stepValue}>
+                <Text variant="heading" tabular>
+                  {targetPerDay}
+                </Text>
+                <Text variant="caption" tone="inkMuted">
+                  {targetPerDay === 1 ? 'vez por dia' : 'vezes por dia'}
+                </Text>
+              </View>
+
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Mais uma marcação por dia"
+                disabled={targetPerDay >= MAX_TARGET}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTargetPerDay(Math.min(MAX_TARGET, targetPerDay + 1));
+                }}
+                style={styles.stepButton}>
+                <Text variant="heading" tone={targetPerDay >= MAX_TARGET ? 'inkDisabled' : 'ink'}>
+                  +
+                </Text>
+              </PressableScale>
+            </View>
+          </View>
 
           <View style={styles.group}>
             <Text variant="label" tone="inkFaint">
@@ -203,6 +257,23 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.ground },
   group: { gap: space.sm },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: color.surfaceRaised,
+    borderRadius: radius.md,
+    padding: space.sm,
+  },
+  stepButton: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.surfaceOverlay,
+  },
+  stepValue: { flex: 1, alignItems: 'center' },
   reminder: {
     minHeight: 48,
     justifyContent: 'center',
