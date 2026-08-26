@@ -48,6 +48,8 @@ export function SettingsScreen() {
     try {
       if (task === 'export') {
         const name = await exportBackup(new Date());
+        if (name === null) return;
+
         setBackupStatus({ text: `Exportado como ${name}.`, failed: false });
       } else {
         const summary = await importBackup();
@@ -62,7 +64,7 @@ export function SettingsScreen() {
         });
       }
     } catch (error) {
-      // cancelar o seletor de arquivo tambem cai aqui, e nao e falha do usuario
+      // desistir do seletor nao chega aqui: os dois caminhos devolvem null antes
       const reason = error instanceof Error ? error.message : 'Não deu para concluir.';
       setBackupStatus({ text: reason, failed: true });
     } finally {

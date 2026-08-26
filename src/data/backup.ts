@@ -6,6 +6,7 @@ import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits } from '@/data/schema';
 import { readCursor } from '@/data/sync';
 import { buildBackup, parseBackup, rowsToImport, type Backup } from '@/domain/backup';
+import { toDay } from '@/domain/calendar';
 import { refreshWidgets } from '@/widget/refresh';
 
 export type ImportSummary = {
@@ -25,16 +26,40 @@ async function readEverything(): Promise<Omit<Backup, 'v' | 'exportedAt'>> {
   return { habits: habitRows, completions: completionRows, dayNotes: noteRows };
 }
 
-export async function exportBackup(now: Date): Promise<string> {
+/** `null` quando o usuario fecha o seletor: desistir nao e erro. */
+export async function exportBackup(now: Date): Promise<string | null> {
   const backup = buildBackup(await readEverything(), now);
-  const name = `habitos-${now.toISOString().slice(0, 10)}.json`;
 
   // SAF: quem escolhe a pasta e o usuario, e o app nao guarda permissao de escrita geral
-  const directory = await Directory.pickDirectoryAsync();
-  const file = directory.createFile(name, 'application/json');
+  const directory = await pickDirectory();
+  if (directory === null) return null;
+
+  const file = directory.createFile(`habitos-${toDay(now)}.json`, 'application/json');
   file.write(JSON.stringify(backup));
 
-  return name;
+  // o SAF renomeia sozinho quando o nome ja existe na pasta: quem sabe o nome final e o arquivo
+  return file.name;
+}
+
+/**
+ * Os dois seletores desistem de jeitos diferentes: o de arquivo devolve `canceled`, o de pasta
+ * lanca. Sem isso, fechar o seletor de pasta pintava de vermelho a mensagem em ingles do modulo.
+ */
+async function pickDirectory(): Promise<Directory | null> {
+  try {
+    return await Directory.pickDirectoryAsync();
+  } catch (error) {
+    if (isPickerCancelled(error)) return null;
+    throw error;
+  }
+}
+
+function isPickerCancelled(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'ERR_PICKER_CANCELLED'
+  );
 }
 
 /** `null` quando o usuario fecha o seletor: desistir nao e erro. */
