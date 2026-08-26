@@ -403,3 +403,4 @@ Nada disso bloqueia as fatias 0–8.
 | 2026-08-22 | Versão inicial, produzida por entrevista. 26 decisões fechadas. |
 | 2026-08-24 | Widget: um receiver redimensionável em vez de três entradas no seletor. Os três tamanhos viraram três layouts sobre o tamanho medido — mesma promessa, sem triplicar o seletor. |
 | 2026-08-24 | Sync: `settings` fica fora do espelho no Postgres. A virada do dia e o primeiro dia da semana são escolha deste aparelho, e a tabela nasceu sem `user_id` e sem `deleted_at` — sincronizá-la seria inventar coluna. O estado do sync é um bloco em Ajustes, como manda a 7.5, e não uma tela própria. |
+| 2026-08-26 | Snapshot do widget vai para a versão 2: a virada do dia e o primeiro dia da semana passam a viajar dentro do arquivo. O headless não tem SQLite garantido, e sem isso o widget desenharia a semana de um jeito e o app de outro. Snapshot v1 é descartado — o app reescreve na primeira abertura. |
