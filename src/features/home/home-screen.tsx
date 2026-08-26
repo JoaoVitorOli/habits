@@ -20,7 +20,6 @@ import { scheduleOf } from '@/domain/schedule';
 import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
-import { CompactRow } from '@/features/home/compact-row';
 import { useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
@@ -117,47 +116,27 @@ export function HomeScreen() {
               const streak = currentStreak({ schedule, completedDays, today, weekStartsOn });
 
               return (
-                <View
-                  key={habit.id}
-                  style={[
-                    styles.column,
-                    compacta ? styles.columnCompact : null,
-                    { width: `${100 / total}%` },
-                  ]}>
+                <View key={habit.id} style={[styles.column, { width: `${100 / total}%` }]}>
                   <PressableScale
                     accessibilityRole="button"
                     accessibilityLabel={`Abrir ${habit.name}`}
-                    style={compacta ? styles.rowShape : styles.card}
+                    style={styles.card}
                     onPress={() => router.push({ pathname: '/habito/[id]', params: { id: habit.id } })}>
-                    {compacta ? (
-                      <CompactRow
-                        onToggleToday={() => toggleToday(habit)}
-                        habit={{
-                          name: habit.name,
-                          icon: habit.icon,
-                          color: paletteKeyOf(habit.color),
-                          schedule,
-                          currentStreak: streak,
-                          todayCount: countToday.get(habit.id) ?? 0,
-                          targetPerDay: habit.targetPerDay,
-                        }}
-                      />
-                    ) : (
-                      <HabitCard
-                        today={today}
-                        onToggleToday={() => toggleToday(habit)}
-                        habit={{
-                          name: habit.name,
-                          icon: habit.icon,
-                          color: paletteKeyOf(habit.color),
-                          schedule,
-                          completedDays,
-                          currentStreak: streak,
-                          todayCount: countToday.get(habit.id) ?? 0,
-                          targetPerDay: habit.targetPerDay,
-                        }}
-                      />
-                    )}
+                    <HabitCard
+                      today={today}
+                      compact={compacta}
+                      onToggleToday={() => toggleToday(habit)}
+                      habit={{
+                        name: habit.name,
+                        icon: habit.icon,
+                        color: paletteKeyOf(habit.color),
+                        schedule,
+                        completedDays,
+                        currentStreak: streak,
+                        todayCount: countToday.get(habit.id) ?? 0,
+                        targetPerDay: habit.targetPerDay,
+                      }}
+                    />
                   </PressableScale>
                 </View>
               );
@@ -192,10 +171,6 @@ const styles = StyleSheet.create({
   columns: { flexDirection: 'row', flexWrap: 'wrap' },
   column: { padding: space.sm },
   card: { borderRadius: radius.xl },
-  /* o brilho do toque precisa ter a forma do que esta embaixo dele */
-  rowShape: { borderRadius: radius.lg },
-  /* a lista compacta respira menos: sao linhas, nao cartoes */
-  columnCompact: { paddingVertical: space.xs },
   fab: {
     position: 'absolute',
     right: space.lg,
