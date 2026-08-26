@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
@@ -17,6 +18,7 @@ import {
 } from '@/data/habits';
 import type { HabitRow } from '@/data/schema';
 import { paletteKeyOf } from '@/domain/palette';
+import { PreferencesCard } from '@/features/settings/preferences-card';
 import { ReorderList } from '@/features/settings/reorder-list';
 import { SyncCard } from '@/features/settings/sync-card';
 import { Button } from '@/ui/button';
@@ -110,6 +112,8 @@ export function SettingsScreen() {
           )}
         </View>
 
+        <PreferencesCard />
+
         <View style={styles.block}>
           <Text variant="label" tone="inkFaint">
             Backup
@@ -180,6 +184,10 @@ export function SettingsScreen() {
             })
           )}
         </View>
+
+        <Text variant="caption" tone="inkFaint">
+          Versão {Constants.expoConfig?.version ?? '—'}
+        </Text>
       </ScrollView>
 
       <ConfirmDialog
