@@ -3,15 +3,11 @@ import { requestWidgetUpdate } from 'react-native-android-widget';
 import { readPreferences, usePreferences } from '@/data/settings';
 import { saveWidgetSnapshot, widgetHabitId } from '@/data/widget';
 import { logicalDay, type Day } from '@/domain/calendar';
-import { DEFAULT_PREFERENCES } from '@/domain/preferences';
-import { habitOf, type WidgetSnapshot } from '@/domain/widget-snapshot';
+import type { WidgetSnapshot } from '@/domain/widget-snapshot';
 import { useToday } from '@/features/use-today';
-import { HabitWidget } from '@/widget/habit-widget';
+import { asksForHabit, WIDGET_NAMES, widgetFor } from '@/widget/render';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-
-/** Precisa bater com o `name` do plugin em app.json. */
-export const WIDGET_NAME = 'Habito';
 
 let pending: ReturnType<typeof setTimeout> | null = null;
 
@@ -36,19 +32,23 @@ export async function redrawWidgets(now: Date): Promise<void> {
   await drawWidgets(snapshot, today);
 }
 
-/** Cada widget na tela inicial mostra o seu habito; o snapshot e um so para todos. */
+/**
+ * Cada widget de habito na tela inicial mostra o seu; a lista compacta mostra os ativos.
+ * O snapshot e um so para todos, e uma marcacao muda os tres de uma vez.
+ */
 export async function drawWidgets(snapshot: WidgetSnapshot | null, today: Day): Promise<void> {
-  await requestWidgetUpdate({
-    widgetName: WIDGET_NAME,
-    renderWidget: async (info) => (
-      <HabitWidget
-        habit={habitOf(snapshot, await widgetHabitId(info.widgetId))}
-        today={today}
-        weekStartsOn={snapshot?.weekStartsOn ?? DEFAULT_PREFERENCES.weekStartsOn}
-        box={info}
-      />
-    ),
-  });
+  for (const widgetName of Object.values(WIDGET_NAMES)) {
+    await requestWidgetUpdate({
+      widgetName,
+      renderWidget: async (info) =>
+        widgetFor({
+          info,
+          snapshot,
+          habitId: asksForHabit(widgetName) ? await widgetHabitId(info.widgetId) : null,
+          today,
+        }),
+    });
+  }
 }
 
 /**

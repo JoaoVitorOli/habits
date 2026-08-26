@@ -347,10 +347,11 @@ só nas bolinhas e no quadrado do ícone. Nada de fundo claro.
 Toque na bolinha de hoje marca/desmarca com atualização otimista, grava no banco pelo headless
 task e reescreve o snapshot. Na lista compacta, cada linha marca o seu hábito.
 
-**O que já está pronto para isso:** o snapshot v2 carrega *todos* os hábitos ativos, com a virada
-do dia e o início da semana; `src/widget/lucide-paths.ts` tem a geometria dos ícones; e o handler
-headless já grava e redesenha. O que muda é a rota por `widgetInfo.widgetName`, uma entrada por
-receiver no plugin `react-native-android-widget` em `app.json`, e o desenho de cada layout.
+Cada receiver é uma entrada no plugin `react-native-android-widget` em `app.json`, e
+`src/widget/render.tsx` é o único lugar que decide o desenho a partir de `widgetInfo.widgetName`.
+Dentro de cada layout a área de dias ainda sai da caixa medida: onde as sete linhas da semana
+cabem em pé é a grade de sempre, onde não cabem ela deita numa faixa de dias, e a lista compacta
+corta as linhas pelo que a altura comporta. Marcar em qualquer um deles redesenha os três.
 
 ---
 
@@ -429,3 +430,5 @@ Nada disso bloqueia as fatias 0–8.
 | 2026-08-24 | Sync: `settings` fica fora do espelho no Postgres. A virada do dia e o primeiro dia da semana são escolha deste aparelho, e a tabela nasceu sem `user_id` e sem `deleted_at` — sincronizá-la seria inventar coluna. O estado do sync é um bloco em Ajustes, como manda a 7.5, e não uma tela própria. |
 | 2026-08-26 | Snapshot do widget vai para a versão 2: a virada do dia e o primeiro dia da semana passam a viajar dentro do arquivo. O headless não tem SQLite garantido, e sem isso o widget desenharia a semana de um jeito e o app de outro. Snapshot v1 é descartado — o app reescreve na primeira abertura. |
 | 2026-08-26 | Widget volta a ser três entradas no seletor, desta vez por decisão de produto e não por limitação: pequeno (2×1), médio (4×1) e lista compacta (4×1) são três coisas diferentes, e escolher pelo tamanho medido escondia a lista — que nem existia. O receiver redimensionável único, decidido em 24/08, sai. |
+| 2026-08-26 | Snapshot do widget vai para a versão 3: a descrição do hábito passa a viajar no arquivo, porque o widget médio a mostra e o headless não tem SQLite para perguntar. O snapshot também passa a sair do banco na ordem de `position` — a lista compacta desenha nessa ordem e nenhuma outra. Snapshot v2 é descartado; o app reescreve na primeira abertura. |
+| 2026-08-26 | A bolinha de hoje marca e desmarca nos três widgets, e não só o botão do médio. É o alvo que a lista compacta já teria de ter — uma linha por hábito não comporta um botão de 48dp — e repeti-lo nos outros dois evita que a mesma bolinha signifique coisas diferentes em cada entrada do seletor. |

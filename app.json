@@ -61,15 +61,38 @@
           ],
           "widgets": [
             {
-              "name": "Habito",
-              "label": "Hábito",
-              "description": "Um hábito, com a sequência e o toque que marca hoje.",
+              "name": "HabitoPequeno",
+              "label": "Hábito pequeno",
+              "description": "Um hábito: o ícone, o nome e a grade de dias.",
               "minWidth": "110dp",
-              "minHeight": "110dp",
-              "targetCellWidth": 4,
-              "targetCellHeight": 2,
+              "minHeight": "40dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
               "resizeMode": "horizontal|vertical",
               "widgetFeatures": "reconfigurable",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "HabitoMedio",
+              "label": "Hábito médio",
+              "description": "Um hábito: descrição, o toque que marca hoje e a grade larga.",
+              "minWidth": "250dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "ListaCompacta",
+              "label": "Lista compacta",
+              "description": "Todos os hábitos, uma linha cada, com os dias da semana no topo.",
+              "minWidth": "250dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal|vertical",
               "updatePeriodMillis": 1800000
             }
           ]

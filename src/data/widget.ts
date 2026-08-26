@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { and, isNull } from 'drizzle-orm';
+import { and, asc, isNull } from 'drizzle-orm';
 
 import { db } from '@/data/db';
 import { completions, habits } from '@/data/schema';
@@ -29,10 +29,12 @@ export async function saveWidgetSnapshot(
   preferences: Preferences,
   now: Date,
 ): Promise<WidgetSnapshot> {
+  // a lista compacta desenha nesta ordem: e a mesma da home, e ela nao pergunta nada
   const rows = await db
     .select()
     .from(habits)
-    .where(and(isNull(habits.deletedAt), isNull(habits.archivedAt)));
+    .where(and(isNull(habits.deletedAt), isNull(habits.archivedAt)))
+    .orderBy(asc(habits.position));
 
   const marks = await db.select().from(completions).where(isNull(completions.deletedAt));
 
@@ -40,6 +42,7 @@ export async function saveWidgetSnapshot(
     habits: rows.map((row) => ({
       id: row.id,
       name: row.name,
+      description: row.description,
       icon: row.icon,
       color: row.color,
       targetPerDay: row.targetPerDay,

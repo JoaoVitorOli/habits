@@ -17,18 +17,18 @@ import type { HabitRow } from '@/data/schema';
 import { readPreferences } from '@/data/settings';
 import { saveWidgetSnapshot, setWidgetHabit } from '@/data/widget';
 import { paletteKeyOf } from '@/domain/palette';
-import { habitOf } from '@/domain/widget-snapshot';
 import { logicalDay } from '@/domain/calendar';
 import { Button } from '@/ui/button';
 import { Icon } from '@/ui/icon';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
-import { HabitWidget } from '@/widget/habit-widget';
+import { widgetFor } from '@/widget/render';
 
 /**
- * Activity propria, aberta pelo Android quando o widget entra na tela inicial. E uma raiz
- * React separada da do app: as fontes e as migrations precisam ser garantidas de novo aqui.
+ * Activity propria, aberta pelo Android quando um widget de habito unico entra na tela
+ * inicial — a lista compacta nao passa por aqui, porque nao pergunta nada. E uma raiz React
+ * separada da do app: as fontes e as migrations precisam ser garantidas de novo aqui.
  */
 export function WidgetConfigurationScreen({
   widgetInfo,
@@ -53,14 +53,7 @@ export function WidgetConfigurationScreen({
     await setWidgetHabit(widgetInfo.widgetId, habit.id);
     const snapshot = await saveWidgetSnapshot(today, preferences, now);
 
-    renderWidget(
-      <HabitWidget
-        habit={habitOf(snapshot, habit.id)}
-        today={today}
-        weekStartsOn={preferences.weekStartsOn}
-        box={widgetInfo}
-      />,
-    );
+    renderWidget(widgetFor({ info: widgetInfo, snapshot, habitId: habit.id, today }));
     setResult('ok');
   }
 

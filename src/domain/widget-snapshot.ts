@@ -8,7 +8,7 @@ import type { Preferences } from './preferences';
 import type { Schedule } from './schedule';
 import { currentStreak, streakUnit } from './streak';
 
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 /** Cabe a grade mais longa do widget com folga, e mantem o JSON pequeno. */
 export const SNAPSHOT_DAYS = 120;
@@ -16,6 +16,8 @@ export const SNAPSHOT_DAYS = 120;
 export type SnapshotHabit = {
   id: string;
   name: string;
+  /** o widget medio mostra a descricao onde o pequeno nao teria largura para ela */
+  description: string | null;
   icon: string;
   color: string;
   targetPerDay: number;
@@ -41,6 +43,7 @@ export type WidgetSnapshot = {
 export type SnapshotHabitInput = {
   id: string;
   name: string;
+  description: string | null;
   icon: string;
   color: string;
   targetPerDay: number;
@@ -90,6 +93,7 @@ export function buildSnapshot({
       return {
         id: habit.id,
         name: habit.name,
+        description: habit.description,
         icon: habit.icon,
         color: habit.color,
         targetPerDay: habit.targetPerDay,
@@ -118,6 +122,31 @@ export function toggleDay(habit: SnapshotHabit, day: Day): SnapshotHabit {
 export function habitOf(snapshot: WidgetSnapshot | null, habitId: string | null): SnapshotHabit | null {
   if (snapshot === null || habitId === null) return null;
   return snapshot.habits.find((habit) => habit.id === habitId) ?? null;
+}
+
+/**
+ * A lista compacta nao pergunta qual habito: mostra os ativos na ordem em que o app os
+ * mostra, cortados pelo numero de linhas que couberam na altura medida do widget.
+ */
+export function habitsOf(snapshot: WidgetSnapshot | null, limit: number): SnapshotHabit[] {
+  if (snapshot === null || limit <= 0) return [];
+  return snapshot.habits.slice(0, limit);
+}
+
+/**
+ * O toque otimista mexe no snapshot inteiro, nao num habito solto: a lista compacta desenha
+ * varios habitos de uma vez, e so um deles mudou.
+ */
+export function toggleHabit(
+  snapshot: WidgetSnapshot | null,
+  habitId: string,
+  day: Day,
+): WidgetSnapshot | null {
+  if (snapshot === null) return null;
+  return {
+    ...snapshot,
+    habits: snapshot.habits.map((habit) => (habit.id === habitId ? toggleDay(habit, day) : habit)),
+  };
 }
 
 export function parseSnapshot(raw: string | null): WidgetSnapshot | null {

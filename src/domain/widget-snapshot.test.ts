@@ -5,15 +5,18 @@ import {
   SNAPSHOT_VERSION,
   buildSnapshot,
   habitOf,
+  habitsOf,
   isDone,
   parseSnapshot,
   toggleDay,
+  toggleHabit,
   type SnapshotHabit,
 } from './widget-snapshot';
 
 const treino = {
   id: 'h1',
   name: 'Treino',
+  description: 'Uma hora de academia',
   icon: 'lucide:dumbbell',
   color: 'vermelho',
   targetPerDay: 1,
@@ -96,6 +99,7 @@ describe('buildSnapshot', () => {
 const agua: SnapshotHabit = {
   id: 'h2',
   name: 'Agua',
+  description: null,
   icon: 'emoji:💧',
   color: 'azul',
   targetPerDay: 3,
@@ -158,6 +162,60 @@ describe('parseSnapshot', () => {
   it('devolve o snapshot quando a versao e a esperada', () => {
     const snapshot = { v: SNAPSHOT_VERSION, generatedAt: gerado.toISOString(), dayStartHour: 4, weekStartsOn: 0, habits: [agua] };
     expect(parseSnapshot(JSON.stringify(snapshot))).toEqual(snapshot);
+  });
+});
+
+describe('habitsOf', () => {
+  const snapshot = {
+    v: SNAPSHOT_VERSION,
+    generatedAt: gerado.toISOString(),
+    dayStartHour: 4,
+    weekStartsOn: 0,
+    habits: [agua, { ...agua, id: 'h3', name: 'Ler' }, { ...agua, id: 'h4', name: 'Correr' }],
+  };
+
+  it('mantem a ordem do snapshot, que e a ordem do app', () => {
+    expect(habitsOf(snapshot, 3).map((habit) => habit.name)).toEqual(['Agua', 'Ler', 'Correr']);
+  });
+
+  it('corta no numero de linhas que couberam', () => {
+    expect(habitsOf(snapshot, 2).map((habit) => habit.id)).toEqual(['h2', 'h3']);
+  });
+
+  it('devolve lista vazia sem snapshot ou sem linha nenhuma', () => {
+    expect(habitsOf(null, 3)).toEqual([]);
+    expect(habitsOf(snapshot, 0)).toEqual([]);
+    expect(habitsOf(snapshot, -1)).toEqual([]);
+  });
+
+  it('nao inventa linha quando ha menos habitos do que cabe', () => {
+    expect(habitsOf(snapshot, 9)).toHaveLength(3);
+  });
+});
+
+describe('toggleHabit', () => {
+  const snapshot = {
+    v: SNAPSHOT_VERSION,
+    generatedAt: gerado.toISOString(),
+    dayStartHour: 4,
+    weekStartsOn: 0,
+    habits: [agua, { ...agua, id: 'h3', days: {} }],
+  };
+
+  it('mexe so no habito tocado', () => {
+    const depois = toggleHabit(snapshot, 'h2', '2026-08-24');
+
+    expect(depois?.habits[0].days['2026-08-24']).toBe(3);
+    expect(depois?.habits[1].days['2026-08-24']).toBeUndefined();
+  });
+
+  it('nao altera o snapshot recebido', () => {
+    toggleHabit(snapshot, 'h2', '2026-08-24');
+    expect(snapshot.habits[0].days['2026-08-24']).toBe(2);
+  });
+
+  it('devolve nulo quando nao havia snapshot', () => {
+    expect(toggleHabit(null, 'h2', '2026-08-24')).toBeNull();
   });
 });
 
