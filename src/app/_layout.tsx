@@ -18,10 +18,14 @@ import { db } from '@/data/db';
 import { rescheduleReminders } from '@/data/notifications';
 import migrations from '@/data/migrations/migrations';
 import { purgeDeleted, useAutoSync } from '@/data/sync';
+import { duration } from '@/ui/motion';
 import { color } from '@/ui/theme';
 import { useWidgetRefresh } from '@/widget/refresh';
 
 SplashScreen.preventAutoHideAsync();
+
+/* a splash nao corta: ela dissolve na home, no mesmo tempo que o resto do app se move */
+SplashScreen.setOptions({ duration: duration.sheet, fade: true });
 
 const tema = {
   ...DarkTheme,

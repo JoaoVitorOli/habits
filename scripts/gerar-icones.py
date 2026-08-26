@@ -81,6 +81,16 @@ def mark(size, content, color, field, glow):
     return halo
 
 
+def halo(size, content):
+    """O brilho violeta atras da marca na splash: luz, que e como este tema faz profundidade."""
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    box = size * content
+    origin = (size - box) / 2
+
+    ImageDraw.Draw(layer).ellipse((origin, origin, origin + box, origin + box), fill=(*ACCENT, 0x3D))
+    return layer.filter(ImageFilter.GaussianBlur(size * 0.09))
+
+
 def background(size):
     """Degrade diagonal do surface para o ground: fundo vivo sem virar desenho.
 
@@ -117,8 +127,12 @@ def main():
     # tematico: a mascara e o alfa, entao aqui so entra o check, e chapado
     write(mark(1024, 0.56, (*INK, 0xFF), None, glow=False), "assets/images/android-icon-monochrome.png")
 
-    # splash: o fundo ja e o ground da tela, a marca entra sozinha
-    write(mark(1024, 0.82, accent, field, glow=True), "assets/images/splash-icon.png")
+    # splash: o Android 12+ mascara o icone num circulo, entao a marca fica bem menor que a
+    # borda e ganha um halo que se apoia na propria mascara em vez de brigar com ela
+    splash = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    splash.alpha_composite(halo(1024, 0.62))
+    splash.alpha_composite(mark(1024, 0.5, accent, field, glow=True))
+    write(splash, "assets/images/splash-icon.png")
 
     small = square.resize((48, 48), Image.LANCZOS)
     write(small, "assets/images/favicon.png")
