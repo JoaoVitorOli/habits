@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { usePreferences } from '@/data/settings';
 import { logicalDay, type Day } from '@/domain/calendar';
-
-/** Ate a tela de ajustes existir (fatia 20 do PRD), a virada e o inicio da semana sao os padroes. */
-export const DEFAULT_DAY_START_HOUR = 4;
-export const DEFAULT_WEEK_STARTS_ON = 0;
 
 /**
  * O app pode ficar aberto atravessando a virada das 4h. Sem reavaliar, marcar "hoje"
  * gravaria no dia de ontem. Setar o mesmo valor nao re-renderiza.
  */
 export function useToday(): Day {
-  const [today, setToday] = useState(() => logicalDay(new Date(), DEFAULT_DAY_START_HOUR));
+  const { dayStartHour } = usePreferences();
+  const [today, setToday] = useState(() => logicalDay(new Date(), dayStartHour));
 
   useEffect(() => {
-    const refresh = () => setToday(logicalDay(new Date(), DEFAULT_DAY_START_HOUR));
+    const refresh = () => setToday(logicalDay(new Date(), dayStartHour));
+
+    // mudar a virada no ajustes muda o dia logico agora, nao no proximo minuto
+    refresh();
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
@@ -26,7 +27,7 @@ export function useToday(): Day {
       subscription.remove();
       clearInterval(timer);
     };
-  }, []);
+  }, [dayStartHour]);
 
   return today;
 }

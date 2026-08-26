@@ -18,7 +18,6 @@ import { weekColumns, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { SNAPSHOT_DAYS, isDone, type SnapshotHabit } from '@/domain/widget-snapshot';
 import { streakLabel } from '@/features/streak-label';
-import { DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
 import { iconKind, iconValue, type IconRef } from '@/ui/icon';
 import { color, fontFamily, palette, radius, space, withOpacity } from '@/ui/theme';
 import { lucidePaths } from '@/widget/lucide-paths';
@@ -92,11 +91,13 @@ const CHECK = '<path d="M20 6 9 17l-5-5"/>';
 type Props = {
   habit: SnapshotHabit | null;
   today: Day;
+  /** vem do snapshot: o widget desenha a semana do mesmo jeito que o app */
+  weekStartsOn: number;
   /** o tamanho vem medido do Android: o desenho e a grade saem dele */
   box: WidgetBox;
 };
 
-export function HabitWidget({ habit, today, box }: Props) {
+export function HabitWidget({ habit, today, weekStartsOn, box }: Props) {
   if (habit === null) return <EmptyWidget />;
 
   const size = widgetSize(box);
@@ -119,9 +120,11 @@ export function HabitWidget({ habit, today, box }: Props) {
         flexGap: size === 'pequeno' ? space.sm : space.md,
       }}>
       <Header habit={habit} today={today} accent={accent} size={size} />
-      {size === 'medio' ? <DayStrip habit={habit} today={today} accent={accent} /> : null}
+      {size === 'medio' ? (
+        <DayStrip habit={habit} today={today} accent={accent} weekStartsOn={weekStartsOn} />
+      ) : null}
       {size === 'grande' ? (
-        <Grid habit={habit} today={today} accent={accent} {...gridMetrics(box)} />
+        <Grid habit={habit} today={today} accent={accent} weekStartsOn={weekStartsOn} {...gridMetrics(box)} />
       ) : null}
     </FlexWidget>
   );
@@ -242,8 +245,18 @@ function MarkButton({ habit, today, accent }: { habit: SnapshotHabit; today: Day
 }
 
 /** 4x2 nao tem altura para as sete linhas da matriz: a semana vira uma faixa. */
-function DayStrip({ habit, today, accent }: { habit: SnapshotHabit; today: Day; accent: ColorProp }) {
-  const week = weekColumns(today, 1, DEFAULT_WEEK_STARTS_ON)[0];
+function DayStrip({
+  habit,
+  today,
+  accent,
+  weekStartsOn,
+}: {
+  habit: SnapshotHabit;
+  today: Day;
+  accent: ColorProp;
+  weekStartsOn: number;
+}) {
+  const week = weekColumns(today, 1, weekStartsOn)[0];
 
   return (
     <FlexWidget style={{ flexDirection: 'row', flexGap: space.xs }}>
@@ -258,19 +271,21 @@ function Grid({
   habit,
   today,
   accent,
+  weekStartsOn,
   weeks,
   cell,
 }: {
   habit: SnapshotHabit;
   today: Day;
   accent: ColorProp;
+  weekStartsOn: number;
   weeks: number;
   cell: number;
 }) {
   return (
     <FlexWidget
       style={{ width: 'match_parent', flexDirection: 'row', justifyContent: 'center', flexGap: space.xs }}>
-      {weekColumns(today, weeks, DEFAULT_WEEK_STARTS_ON).map((week) => (
+      {weekColumns(today, weeks, weekStartsOn).map((week) => (
         <FlexWidget key={week[0]} style={{ flexGap: space.xs }}>
           {week.map((day) => (
             <Cell key={day} habit={habit} day={day} today={today} accent={accent} size={cell} />

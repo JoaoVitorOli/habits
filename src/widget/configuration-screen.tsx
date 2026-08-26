@@ -14,10 +14,10 @@ import { db } from '@/data/db';
 import { activeHabitsQuery } from '@/data/habits';
 import migrations from '@/data/migrations/migrations';
 import type { HabitRow } from '@/data/schema';
+import { readPreferences } from '@/data/settings';
 import { saveWidgetSnapshot, setWidgetHabit } from '@/data/widget';
 import { paletteKeyOf } from '@/domain/palette';
 import { habitOf } from '@/domain/widget-snapshot';
-import { DEFAULT_DAY_START_HOUR, DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
 import { logicalDay } from '@/domain/calendar';
 import { Button } from '@/ui/button';
 import { Icon } from '@/ui/icon';
@@ -47,13 +47,19 @@ export function WidgetConfigurationScreen({
 
   async function choose(habit: HabitRow) {
     const now = new Date();
-    const today = logicalDay(now, DEFAULT_DAY_START_HOUR);
+    const preferences = await readPreferences();
+    const today = logicalDay(now, preferences.dayStartHour);
 
     await setWidgetHabit(widgetInfo.widgetId, habit.id);
-    const snapshot = await saveWidgetSnapshot(today, DEFAULT_WEEK_STARTS_ON, now);
+    const snapshot = await saveWidgetSnapshot(today, preferences, now);
 
     renderWidget(
-      <HabitWidget habit={habitOf(snapshot, habit.id)} today={today} box={widgetInfo} />,
+      <HabitWidget
+        habit={habitOf(snapshot, habit.id)}
+        today={today}
+        weekStartsOn={preferences.weekStartsOn}
+        box={widgetInfo}
+      />,
     );
     setResult('ok');
   }

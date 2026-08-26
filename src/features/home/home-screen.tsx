@@ -11,13 +11,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { completionsSince, toggleCompletion } from '@/data/completions';
 import { activeHabitsQuery } from '@/data/habits';
 import type { HabitRow } from '@/data/schema';
+import { usePreferences } from '@/data/settings';
 import { addDays, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { scheduleOf } from '@/domain/schedule';
 import { currentStreak } from '@/domain/streak';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
-import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
+import { useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, radius, space, withOpacity } from '@/ui/theme';
@@ -32,6 +33,7 @@ export function HomeScreen() {
   const router = useRouter();
   const today = useToday();
   const breakpoint = useBreakpoint();
+  const { weekStartsOn } = usePreferences();
 
   const windowStart = addDays(today, -(GRID_WEEKS + 1) * 7);
   const { data: habits } = useLiveQuery(activeHabitsQuery);
@@ -111,7 +113,7 @@ export function HomeScreen() {
                           schedule,
                           completedDays,
                           today,
-                          weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+                          weekStartsOn,
                         }),
                       }}
                     />

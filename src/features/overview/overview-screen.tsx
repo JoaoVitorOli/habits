@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { completionsSince } from '@/data/completions';
 import { activeHabitsQuery } from '@/data/habits';
+import { usePreferences } from '@/data/settings';
 import { addDays, monthOf, startOfMonth, type Day } from '@/domain/calendar';
 import { dayRatio, perfectDays, type HabitProgress } from '@/domain/overview';
 import { paletteKeyOf } from '@/domain/palette';
@@ -18,7 +19,7 @@ import { HabitMatrix } from '@/features/overview/habit-matrix';
 import { StatCard } from '@/features/overview/stat-card';
 import { RingCalendar } from '@/features/overview/ring-calendar';
 import { unitFor } from '@/features/streak-label';
-import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
+import { useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
 import { color, radius, space } from '@/ui/theme';
@@ -30,6 +31,7 @@ export function OverviewScreen() {
   const router = useRouter();
   const today = useToday();
   const breakpoint = useBreakpoint();
+  const { weekStartsOn } = usePreferences();
   const [month, setMonth] = useState(() => monthOf(today));
   const [selectedDay, setSelectedDay] = useState<Day | null>(null);
 
@@ -82,7 +84,7 @@ export function OverviewScreen() {
               schedule: row.schedule,
               completedDays: row.completedDays,
               month,
-              weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+              weekStartsOn,
             }),
           0,
         ) / rows.length;
@@ -93,7 +95,7 @@ export function OverviewScreen() {
         schedule: row.schedule,
         completedDays: row.completedDays,
         today,
-        weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+        weekStartsOn,
       });
       return value > best.value ? { value, unit: streakUnit(row.schedule) } : best;
     },

@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
 import { archiveHabit, habitByIdQuery, updateStreakGoal } from '@/data/habits';
 import { notesOfHabit, saveNote } from '@/data/notes';
+import { usePreferences } from '@/data/settings';
 import { monthOf, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { scheduleOf, weekdaysOf, type Schedule } from '@/domain/schedule';
@@ -22,7 +23,7 @@ import { Heatmap } from '@/features/habit-detail/heatmap';
 import { MonthCalendar } from '@/features/habit-detail/month-calendar';
 import { StreakCard } from '@/features/habit-detail/streak-card';
 import { StreakGoalDialog } from '@/features/streak-goal/streak-goal-dialog';
-import { DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
+import { useToday } from '@/features/use-today';
 import { ConfirmDialog } from '@/ui/confirm-dialog';
 import { Icon } from '@/ui/icon';
 import { Menu } from '@/ui/menu';
@@ -51,6 +52,7 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const router = useRouter();
   const today = useToday();
   const breakpoint = useBreakpoint();
+  const { weekStartsOn } = usePreferences();
   const [month, setMonth] = useState(() => monthOf(today));
   const [menuOpen, setMenuOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -85,8 +87,8 @@ export function HabitDetailScreen({ id }: { id: string }) {
   const schedule = scheduleOf(habit);
   const accent = palette[paletteKeyOf(habit.color)];
   const unit = streakUnit(schedule);
-  const input = { schedule, completedDays, today, weekStartsOn: DEFAULT_WEEK_STARTS_ON };
-  const rate = monthRate({ schedule, completedDays, month, weekStartsOn: DEFAULT_WEEK_STARTS_ON });
+  const input = { schedule, completedDays, today, weekStartsOn };
+  const rate = monthRate({ schedule, completedDays, month, weekStartsOn });
   const wide = breakpoint !== 'compact';
 
   const toggle = (day: Day) => toggleCompletion(habit, day, new Date());

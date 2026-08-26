@@ -4,6 +4,7 @@ import { and, isNull } from 'drizzle-orm';
 import { db } from '@/data/db';
 import { completions, habits } from '@/data/schema';
 import type { Day } from '@/domain/calendar';
+import type { Preferences } from '@/domain/preferences';
 import { scheduleOf } from '@/domain/schedule';
 import { buildSnapshot, parseSnapshot, type WidgetSnapshot } from '@/domain/widget-snapshot';
 
@@ -23,7 +24,11 @@ export async function readWidgetSnapshot(): Promise<WidgetSnapshot | null> {
  * widget. O historico completo entra no calculo da sequencia; a janela corta so o que vai
  * para o arquivo.
  */
-export async function saveWidgetSnapshot(today: Day, weekStartsOn: number, now: Date): Promise<WidgetSnapshot> {
+export async function saveWidgetSnapshot(
+  today: Day,
+  preferences: Preferences,
+  now: Date,
+): Promise<WidgetSnapshot> {
   const rows = await db
     .select()
     .from(habits)
@@ -42,7 +47,7 @@ export async function saveWidgetSnapshot(today: Day, weekStartsOn: number, now: 
     })),
     completions: marks.map((mark) => ({ habitId: mark.habitId, day: mark.day, count: mark.count })),
     today,
-    weekStartsOn,
+    preferences,
     generatedAt: now,
   });
 

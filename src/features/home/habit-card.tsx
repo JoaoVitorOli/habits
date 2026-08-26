@@ -14,9 +14,9 @@ import { weekColumns, type Day } from '@/domain/calendar';
 import type { PaletteKey } from '@/domain/palette';
 import type { Schedule } from '@/domain/schedule';
 import { streakUnit } from '@/domain/streak';
+import { usePreferences } from '@/data/settings';
 import { MarkButton } from '@/features/home/mark-button';
 import { streakLabel } from '@/features/streak-label';
-import { DEFAULT_WEEK_STARTS_ON } from '@/features/use-today';
 import { Icon, type IconRef } from '@/ui/icon';
 import { Text } from '@/ui/text';
 import { color, palette, radius, space, withOpacity } from '@/ui/theme';
@@ -44,6 +44,7 @@ type Props = {
 
 export function HabitCard({ habit, today, onToggleToday }: Props) {
   const breakpoint = useBreakpoint();
+  const { weekStartsOn } = usePreferences();
   const accent = palette[habit.color];
   const size = cellSize[breakpoint];
   const doneToday = habit.completedDays.has(today);
@@ -75,7 +76,7 @@ export function HabitCard({ habit, today, onToggleToday }: Props) {
 
       {/* o grid do card e so leitura: marcar acontece no botao e na tela de detalhe */}
       <View style={styles.grid} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        {weekColumns(today, GRID_WEEKS, DEFAULT_WEEK_STARTS_ON).map((week) => (
+        {weekColumns(today, GRID_WEEKS, weekStartsOn).map((week) => (
           <View key={week[0]} style={styles.week}>
             {week.map((day) =>
               day === today ? (

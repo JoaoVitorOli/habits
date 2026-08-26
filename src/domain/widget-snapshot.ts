@@ -4,10 +4,11 @@
  * e versionado — um snapshot de outra versao e descartado, nao adivinhado.
  */
 import { addDays, type Day } from './calendar';
+import type { Preferences } from './preferences';
 import type { Schedule } from './schedule';
 import { currentStreak, streakUnit } from './streak';
 
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
 
 /** Cabe a grade mais longa do widget com folga, e mantem o JSON pequeno. */
 export const SNAPSHOT_DAYS = 120;
@@ -28,6 +29,12 @@ export type SnapshotHabit = {
 export type WidgetSnapshot = {
   v: number;
   generatedAt: string;
+  /**
+   * O headless nao le o SQLite, entao a virada do dia e o inicio da semana viajam no arquivo:
+   * sem isso o widget desenharia a semana de um jeito e o app de outro.
+   */
+  dayStartHour: number;
+  weekStartsOn: number;
   habits: SnapshotHabit[];
 };
 
@@ -51,7 +58,7 @@ export type BuildSnapshotInput = {
   /** historico inteiro: a janela corta o que vai para o arquivo, nao o que conta a sequencia */
   completions: SnapshotCompletion[];
   today: Day;
-  weekStartsOn: number;
+  preferences: Preferences;
   generatedAt: Date;
 };
 
@@ -59,14 +66,17 @@ export function buildSnapshot({
   habits,
   completions,
   today,
-  weekStartsOn,
+  preferences,
   generatedAt,
 }: BuildSnapshotInput): WidgetSnapshot {
   const windowStart = addDays(today, -(SNAPSHOT_DAYS - 1));
+  const { dayStartHour, weekStartsOn } = preferences;
 
   return {
     v: SNAPSHOT_VERSION,
     generatedAt: generatedAt.toISOString(),
+    dayStartHour,
+    weekStartsOn,
     habits: habits.map((habit) => {
       const mine = completions.filter((completion) => completion.habitId === habit.id);
       const days: Record<Day, number> = {};

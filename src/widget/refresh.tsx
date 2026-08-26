@@ -1,9 +1,11 @@
 import { requestWidgetUpdate } from 'react-native-android-widget';
 
+import { readPreferences } from '@/data/settings';
 import { saveWidgetSnapshot, widgetHabitId } from '@/data/widget';
 import { logicalDay, type Day } from '@/domain/calendar';
+import { DEFAULT_PREFERENCES } from '@/domain/preferences';
 import { habitOf, type WidgetSnapshot } from '@/domain/widget-snapshot';
-import { DEFAULT_DAY_START_HOUR, DEFAULT_WEEK_STARTS_ON, useToday } from '@/features/use-today';
+import { useToday } from '@/features/use-today';
 import { HabitWidget } from '@/widget/habit-widget';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
@@ -28,8 +30,9 @@ export function refreshWidgets(): void {
 }
 
 export async function redrawWidgets(now: Date): Promise<void> {
-  const today = logicalDay(now, DEFAULT_DAY_START_HOUR);
-  const snapshot = await saveWidgetSnapshot(today, DEFAULT_WEEK_STARTS_ON, now);
+  const preferences = await readPreferences();
+  const today = logicalDay(now, preferences.dayStartHour);
+  const snapshot = await saveWidgetSnapshot(today, preferences, now);
   await drawWidgets(snapshot, today);
 }
 
@@ -38,7 +41,12 @@ export async function drawWidgets(snapshot: WidgetSnapshot | null, today: Day): 
   await requestWidgetUpdate({
     widgetName: WIDGET_NAME,
     renderWidget: async (info) => (
-      <HabitWidget habit={habitOf(snapshot, await widgetHabitId(info.widgetId))} today={today} box={info} />
+      <HabitWidget
+        habit={habitOf(snapshot, await widgetHabitId(info.widgetId))}
+        today={today}
+        weekStartsOn={snapshot?.weekStartsOn ?? DEFAULT_PREFERENCES.weekStartsOn}
+        box={info}
+      />
     ),
   });
 }

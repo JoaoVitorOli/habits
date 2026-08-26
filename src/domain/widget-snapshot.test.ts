@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_PREFERENCES } from './preferences';
 import {
   SNAPSHOT_VERSION,
   buildSnapshot,
@@ -31,7 +32,7 @@ describe('buildSnapshot', () => {
         { habitId: 'h1', day: '2026-08-22', count: 2 },
       ],
       today: '2026-08-24',
-      weekStartsOn: 0,
+      preferences: DEFAULT_PREFERENCES,
       generatedAt: gerado,
     });
 
@@ -48,7 +49,7 @@ describe('buildSnapshot', () => {
         { habitId: 'h1', day: '2026-04-26', count: 1 },
       ],
       today: '2026-08-24',
-      weekStartsOn: 0,
+      preferences: DEFAULT_PREFERENCES,
       generatedAt: gerado,
     });
 
@@ -65,7 +66,7 @@ describe('buildSnapshot', () => {
       habits: [treino],
       completions,
       today: '2026-08-24',
-      weekStartsOn: 0,
+      preferences: DEFAULT_PREFERENCES,
       generatedAt: gerado,
     });
 
@@ -84,7 +85,7 @@ describe('buildSnapshot', () => {
         { habitId: 'h2', day: '2026-08-21', count: 3 },
       ],
       today: '2026-08-24',
-      weekStartsOn: 0,
+      preferences: DEFAULT_PREFERENCES,
       generatedAt: gerado,
     });
 
@@ -114,7 +115,7 @@ describe('buildSnapshot, por semana', () => {
         { habitId: 'h1', day: '2026-08-19', count: 1 },
       ],
       today: '2026-08-24',
-      weekStartsOn: 0,
+      preferences: DEFAULT_PREFERENCES,
       generatedAt: gerado,
     });
 
@@ -155,13 +156,13 @@ describe('parseSnapshot', () => {
   });
 
   it('devolve o snapshot quando a versao e a esperada', () => {
-    const snapshot = { v: SNAPSHOT_VERSION, generatedAt: gerado.toISOString(), habits: [agua] };
+    const snapshot = { v: SNAPSHOT_VERSION, generatedAt: gerado.toISOString(), dayStartHour: 4, weekStartsOn: 0, habits: [agua] };
     expect(parseSnapshot(JSON.stringify(snapshot))).toEqual(snapshot);
   });
 });
 
 describe('habitOf', () => {
-  const snapshot = { v: SNAPSHOT_VERSION, generatedAt: gerado.toISOString(), habits: [agua] };
+  const snapshot = { v: SNAPSHOT_VERSION, generatedAt: gerado.toISOString(), dayStartHour: 4, weekStartsOn: 0, habits: [agua] };
 
   it('acha o habito do widget e devolve nulo quando ele nao existe mais', () => {
     expect(habitOf(snapshot, 'h2')?.name).toBe('Agua');
