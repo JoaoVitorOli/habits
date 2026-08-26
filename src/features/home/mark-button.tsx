@@ -9,26 +9,33 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { PressableScale } from '@/ui/pressable-scale';
+import { Text } from '@/ui/text';
 import { color, radius, withOpacity } from '@/ui/theme';
 
 type Props = {
-  done: boolean;
+  /** quantas marcacoes o dia ja tem */
+  count: number;
+  /** quantas o dia precisa: `count >= target` e o dia completo */
+  target: number;
   accent: string;
   label: string;
   onPress: () => void;
 };
 
 /** Marcar e raro e e o momento do app: aqui cabe mola, nao so um corte de cor. */
-export function MarkButton({ done, accent, label, onPress }: Props) {
-  const progress = useSharedValue(done ? 1 : 0);
+export function MarkButton({ count, target, accent, label, onPress }: Props) {
+  const done = count >= target;
+  // com meta de tres, o primeiro toque precisa aparecer: o botao enche pela fracao do dia
+  const filled = done ? 1 : Math.min(1, Math.max(0, count / target));
+  const progress = useSharedValue(filled);
 
   useEffect(() => {
     progress.set(
-      withSpring(done ? 1 : 0, { duration: 400, dampingRatio: 0.8, reduceMotion: ReduceMotion.System }),
+      withSpring(filled, { duration: 400, dampingRatio: 0.8, reduceMotion: ReduceMotion.System }),
     );
-  }, [done, progress]);
+  }, [filled, progress]);
 
-  const fill = useAnimatedStyle(() => ({ opacity: progress.get() }));
+  const fill = useAnimatedStyle(() => ({ height: `${progress.get() * 100}%` }));
   const glyph = useAnimatedStyle(() => {
     const value = progress.get();
     return { opacity: 0.35 + 0.65 * value, transform: [{ scale: 0.85 + 0.15 * value }] };
@@ -38,12 +45,20 @@ export function MarkButton({ done, accent, label, onPress }: Props) {
     <PressableScale
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done }}
+      accessibilityValue={target > 1 ? { min: 0, max: target, now: count } : undefined}
       accessibilityLabel={label}
       onPress={onPress}
       style={[styles.button, { borderColor: withOpacity(accent, 0.4) }]}>
       <Animated.View style={[styles.fill, { backgroundColor: accent }, fill]} />
       <Animated.View style={glyph}>
-        <Check size={24} color={done ? color.ink : accent} strokeWidth={3} />
+        {/* enquanto falta marcacao, o numero e a unica coisa que diz onde o dia esta */}
+        {target > 1 && !done ? (
+          <Text variant="label" tone="ink" tabular>
+            {count}/{target}
+          </Text>
+        ) : (
+          <Check size={24} color={done ? color.ink : accent} strokeWidth={3} />
+        )}
       </Animated.View>
     </PressableScale>
   );
@@ -59,5 +74,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  fill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  /* enche de baixo para cima: o dia sobe, nao aparece inteiro de uma vez */
+  fill: { position: 'absolute', right: 0, bottom: 0, left: 0 },
 });

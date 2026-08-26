@@ -223,6 +223,9 @@ function Glyph({ icon, accent, size }: { icon: IconRef; accent: ColorProp; size:
 /** Alvo de 48dp: o toque acontece com o widget na tela inicial, sem chance de mira fina. */
 function MarkButton({ habit, today, accent }: { habit: SnapshotHabit; today: Day; accent: ColorProp }) {
   const done = isDone(habit, today);
+  const count = habit.days[today] ?? 0;
+  // sem o numero, uma meta de tres desenharia 1/3 igual a 0/3 na tela inicial
+  const partial = !done && habit.targetPerDay > 1;
 
   return (
     <FlexWidget
@@ -239,7 +242,14 @@ function MarkButton({ habit, today, accent }: { habit: SnapshotHabit; today: Day
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <SvgWidget svg={svgOf(CHECK, done ? color.ink : accent)} style={{ width: 24, height: 24 }} />
+      {partial ? (
+        <TextWidget
+          text={`${count}/${habit.targetPerDay}`}
+          style={{ fontFamily: fontFamily.medium, fontSize: 13, color: accent }}
+        />
+      ) : (
+        <SvgWidget svg={svgOf(CHECK, done ? color.ink : accent)} style={{ width: 24, height: 24 }} />
+      )}
     </FlexWidget>
   );
 }

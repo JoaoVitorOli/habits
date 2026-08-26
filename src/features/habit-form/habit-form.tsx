@@ -125,6 +125,8 @@ export function HabitForm({ title, submitLabel, initial, onSubmit, onClose, foot
               schedule,
               currentStreak: 0,
               completedDays: NO_DAYS,
+              todayCount: 0,
+              targetPerDay,
             }}
           />
 

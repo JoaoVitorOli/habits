@@ -15,7 +15,8 @@ export type CompactRowModel = {
   color: PaletteKey;
   schedule: Schedule;
   currentStreak: number;
-  doneToday: boolean;
+  todayCount: number;
+  targetPerDay: number;
 };
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
  */
 export function CompactRow({ habit, onToggleToday }: Props) {
   const accent = palette[habit.color];
+  const doneToday = habit.todayCount >= habit.targetPerDay;
 
   return (
     <View style={styles.row}>
@@ -44,9 +46,10 @@ export function CompactRow({ habit, onToggleToday }: Props) {
         </Text>
       </View>
       <MarkButton
-        done={habit.doneToday}
+        count={habit.todayCount}
+        target={habit.targetPerDay}
         accent={accent}
-        label={habit.doneToday ? `Desmarcar ${habit.name} hoje` : `Marcar ${habit.name} hoje`}
+        label={doneToday ? `Desmarcar ${habit.name} hoje` : `Marcar ${habit.name} hoje`}
         onPress={onToggleToday}
       />
     </View>

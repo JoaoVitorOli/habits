@@ -29,6 +29,9 @@ export type HabitCardModel = {
   schedule: Schedule;
   currentStreak: number;
   completedDays: ReadonlySet<Day>;
+  /** marcacoes de hoje e quantas o dia pede: uma meta de tres precisa mostrar 1/3 */
+  todayCount: number;
+  targetPerDay: number;
 };
 
 /** Celula do grid cresce em degraus fixos, nunca por escala continua sobre a largura. */
@@ -66,7 +69,8 @@ export function HabitCard({ habit, today, onToggleToday }: Props) {
         </View>
         {onToggleToday ? (
           <MarkButton
-            done={doneToday}
+            count={habit.todayCount}
+            target={habit.targetPerDay}
             accent={accent}
             label={doneToday ? `Desmarcar ${habit.name} hoje` : `Marcar ${habit.name} hoje`}
             onPress={onToggleToday}

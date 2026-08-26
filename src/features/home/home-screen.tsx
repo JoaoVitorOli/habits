@@ -57,6 +57,17 @@ export function HomeScreen() {
     return byHabit;
   }, [habits, completions]);
 
+  /* o dia incompleto tambem tem historia: sem a contagem, 1/3 e 0/3 desenhariam igual */
+  const countToday = useMemo(() => {
+    const byHabit = new Map<string, number>();
+
+    for (const completion of completions) {
+      if (completion.day === today) byHabit.set(completion.habitId, completion.count);
+    }
+
+    return byHabit;
+  }, [completions, today]);
+
   const total = columns[breakpoint];
   const openForm = () => router.push('/habito/novo');
   const compacta = homeView === 'compact';
@@ -127,7 +138,8 @@ export function HomeScreen() {
                           color: paletteKeyOf(habit.color),
                           schedule,
                           currentStreak: streak,
-                          doneToday: completedDays.has(today),
+                          todayCount: countToday.get(habit.id) ?? 0,
+                          targetPerDay: habit.targetPerDay,
                         }}
                       />
                     ) : (
@@ -141,6 +153,8 @@ export function HomeScreen() {
                           schedule,
                           completedDays,
                           currentStreak: streak,
+                          todayCount: countToday.get(habit.id) ?? 0,
+                          targetPerDay: habit.targetPerDay,
                         }}
                       />
                     )}
