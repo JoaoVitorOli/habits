@@ -33,7 +33,7 @@ const pages = [
     href: '/ajustes/backup' as Href,
     icon: DatabaseBackup,
     title: 'Backup',
-    hint: 'Exportar e importar o arquivo JSON',
+    hint: 'Arquivo JSON e relatório para ler',
   },
 ];
 

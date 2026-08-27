@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { exportBackup, importBackup } from '@/data/backup';
+import { exportBackup, exportReport, importBackup } from '@/data/backup';
 import { SettingsPage } from '@/features/settings/settings-page';
 import { Button } from '@/ui/button';
 import { Text } from '@/ui/text';
@@ -11,7 +11,7 @@ export function BackupScreen() {
   const [status, setStatus] = useState<{ text: string; failed: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function run(task: 'export' | 'import') {
+  async function run(task: 'export' | 'import' | 'report') {
     setBusy(true);
     setStatus(null);
 
@@ -21,6 +21,11 @@ export function BackupScreen() {
         if (name === null) return;
 
         setStatus({ text: `Exportado como ${name}.`, failed: false });
+      } else if (task === 'report') {
+        const name = await exportReport(new Date());
+        if (name === null) return;
+
+        setStatus({ text: `Relatório salvo como ${name}.`, failed: false });
       } else {
         const summary = await importBackup();
         if (summary === null) return;
@@ -61,6 +66,22 @@ export function BackupScreen() {
             {status.text}
           </Text>
         )}
+      </View>
+
+      <View style={styles.block}>
+        <Text variant="label" tone="inkFaint">
+          Relatório
+        </Text>
+        <Text variant="caption" tone="inkFaint">
+          Um arquivo de texto para ler, mês a mês, com a nota de cada dia ao lado da marcação. É
+          só para levar embora — quem restaura o app é o JSON.
+        </Text>
+        <Button
+          label="Exportar relatório"
+          variant="ghost"
+          disabled={busy}
+          onPress={() => run('report')}
+        />
       </View>
 
       <Text variant="caption" tone="inkFaint">
