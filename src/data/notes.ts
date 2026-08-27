@@ -5,11 +5,24 @@ import { uuidV7 } from '@/data/id';
 import { dayNotes } from '@/data/schema';
 import type { Day } from '@/domain/calendar';
 
+/** Query viva das notas de um dia inteiro: e o que a home precisa saber para hoje. */
+export function notesOn(day: Day) {
+  return db
+    .select()
+    .from(dayNotes)
+    .where(and(eq(dayNotes.day, day), isNull(dayNotes.deletedAt)));
+}
+
 export function notesOfHabit(habitId: string) {
   return db
     .select()
     .from(dayNotes)
     .where(and(eq(dayNotes.habitId, habitId), isNull(dayNotes.deletedAt)));
+}
+
+/** Remocao explicita, do botao do dialogo: mesmo soft delete de salvar com o texto vazio. */
+export async function removeNote(habitId: string, day: Day, now: Date): Promise<void> {
+  await saveNote(habitId, day, '', now);
 }
 
 /** Nota vazia e nota apagada: soft delete, para o sync levar a remocao adiante. */

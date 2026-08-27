@@ -6,6 +6,7 @@ import { rescheduleReminders } from '@/data/notifications';
 import { completions, dayNotes, habits } from '@/data/schema';
 import { buildBackup, parseBackup, rowsToImport, type Backup } from '@/domain/backup';
 import { toDay } from '@/domain/calendar';
+import { buildReport } from '@/domain/report';
 import { refreshWidgets } from '@/widget/refresh';
 
 export type ImportSummary = {
@@ -37,6 +38,23 @@ export async function exportBackup(now: Date): Promise<string | null> {
   file.write(JSON.stringify(backup));
 
   // o SAF renomeia sozinho quando o nome ja existe na pasta: quem sabe o nome final e o arquivo
+  return file.name;
+}
+
+/**
+ * O relatorio nao volta para dentro do app: e o arquivo que da para abrir e ler, com as notas
+ * do dia ao lado da marcacao. Quem restaura e o JSON.
+ */
+export async function exportReport(now: Date): Promise<string | null> {
+  const content = await readEverything();
+  const habitRows = [...content.habits].sort((left, right) => left.position - right.position);
+
+  const directory = await pickDirectory();
+  if (directory === null) return null;
+
+  const file = directory.createFile(`habitos-${toDay(now)}.md`, 'text/markdown');
+  file.write(buildReport({ ...content, habits: habitRows }, now));
+
   return file.name;
 }
 

@@ -6,30 +6,36 @@ import LayoutGrid from 'lucide-react-native/icons/layout-grid';
 import List from 'lucide-react-native/icons/list';
 import Plus from 'lucide-react-native/icons/plus';
 import Settings from 'lucide-react-native/icons/settings';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { completionsSince, toggleCompletion } from '@/data/completions';
 import { activeHabitsQuery } from '@/data/habits';
+import { notesOn, removeNote, saveNote } from '@/data/notes';
 import type { HabitRow } from '@/data/schema';
 import { savePreferences, usePreferences } from '@/data/settings';
 import { addDays, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { scheduleOf } from '@/domain/schedule';
 import { currentStreak } from '@/domain/streak';
+import { DayNoteDialog } from '@/features/day-note/day-note-dialog';
 import { EmptyHome } from '@/features/home/empty-home';
 import { GRID_WEEKS, HabitCard } from '@/features/home/habit-card';
+import { NoteInvite } from '@/features/home/note-invite';
 import { useToday } from '@/features/use-today';
 import { PressableScale } from '@/ui/pressable-scale';
 import { Text } from '@/ui/text';
-import { color, radius, space, withOpacity } from '@/ui/theme';
+import { color, palette, radius, space, withOpacity } from '@/ui/theme';
 import { useBreakpoint, type Breakpoint } from '@/ui/use-breakpoint';
 
 /** Tablet ganha coluna, nao ganha tamanho. */
 const columns: Record<Breakpoint, number> = { compact: 1, medium: 2, expanded: 3 };
 
 const NO_DAYS: ReadonlySet<Day> = new Set();
+
+/** Quanto o convite de nota fica na tela antes de sumir sozinho. */
+const INVITE_MS = 8000;
 
 export function HomeScreen() {
   const router = useRouter();
@@ -40,6 +46,24 @@ export function HomeScreen() {
   const windowStart = addDays(today, -(GRID_WEEKS + 1) * 7);
   const { data: habits } = useLiveQuery(activeHabitsQuery);
   const { data: completions } = useLiveQuery(completionsSince(windowStart), [windowStart]);
+  const { data: notesToday } = useLiveQuery(notesOn(today), [today]);
+
+  /** habito que acabou de fechar o dia: e embaixo dele que o convite de nota aparece */
+  const [invited, setInvited] = useState<string | null>(null);
+  const [noteFor, setNoteFor] = useState<HabitRow | null>(null);
+
+  const noteByHabit = useMemo(() => {
+    const byHabit = new Map<string, string>();
+    for (const note of notesToday) byHabit.set(note.habitId, note.text);
+    return byHabit;
+  }, [notesToday]);
+
+  useEffect(() => {
+    if (invited === null) return;
+
+    const timer = setTimeout(() => setInvited(null), INVITE_MS);
+    return () => clearTimeout(timer);
+  }, [invited]);
 
   /* uma linha por (habito, dia): completo e `count >= targetPerDay` do proprio habito */
   const completedByHabit = useMemo(() => {
@@ -71,9 +95,22 @@ export function HomeScreen() {
   const openForm = () => router.push('/habito/novo');
   const compacta = homeView === 'compact';
 
-  function toggleToday(habit: HabitRow) {
+  async function toggleToday(habit: HabitRow) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    toggleCompletion(habit, today, new Date());
+    const { done } = await toggleCompletion(habit, today, new Date());
+    setInvited(done ? habit.id : null);
+  }
+
+  function writeNote(text: string) {
+    if (noteFor !== null) saveNote(noteFor.id, today, text, new Date());
+    setNoteFor(null);
+    setInvited(null);
+  }
+
+  function eraseNote() {
+    if (noteFor !== null) removeNote(noteFor.id, today, new Date());
+    setNoteFor(null);
+    setInvited(null);
   }
 
   return (
@@ -138,12 +175,30 @@ export function HomeScreen() {
                       }}
                     />
                   </PressableScale>
+
+                  {invited === habit.id ? (
+                    <NoteInvite
+                      hasNote={noteByHabit.has(habit.id)}
+                      accent={palette[paletteKeyOf(habit.color)]}
+                      onPress={() => setNoteFor(habit)}
+                    />
+                  ) : null}
                 </View>
               );
             })}
           </View>
         </ScrollView>
       )}
+
+      <DayNoteDialog
+        key={noteFor?.id ?? 'sem-habito'}
+        subject={noteFor?.name ?? null}
+        day={noteFor === null ? null : today}
+        initialText={noteFor === null ? '' : (noteByHabit.get(noteFor.id) ?? '')}
+        onSave={writeNote}
+        onRemove={noteFor !== null && noteByHabit.has(noteFor.id) ? eraseNote : undefined}
+        onClose={() => setNoteFor(null)}
+      />
 
       <PressableScale
         accessibilityRole="button"
