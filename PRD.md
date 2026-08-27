@@ -30,10 +30,11 @@ Quando uma decisão de implementação não estiver escrita aqui, decida por est
 Criar/editar/arquivar/excluir/reordenar hábitos · ícone Lucide ou emoji · cor por hábito ·
 agenda por dias da semana ou N vezes por semana · meta diária (`targetPerDay`) ·
 marcação de hoje e de dias passados · streak atual, recorde e meta de sequência ·
-heatmap estilo GitHub · calendário mensal navegável · nota por dia ·
+heatmap estilo GitHub · calendário mensal navegável · nota por dia, escrita pela home logo
+depois de marcar, com tela própria para reler, editar, remover e preencher dia esquecido ·
 tela de visão geral com estatísticas · lembrete diário por hábito ·
 widget na tela inicial com marcação ·
-export/import JSON · layout responsivo para tablet.
+export/import JSON · relatório `.md` para ler · layout responsivo para tablet.
 
 ### Fora, por decisão
 Categorias e filtros · imagem custom como ícone · tema claro · i18n · iOS · web ·
@@ -60,12 +61,13 @@ compartilhamento social · paywall.
 | 12 | Cor | Uma por hábito, de paleta fechada de 10. Roxo `#6C4BF6` é default e cor do chrome. |
 | 13 | Ícone | ~150 ícones Lucide curados + aba de emoji. Sem imagem custom. |
 | 14 | Recursos | Descrição, `streakGoal`, nota por dia, arquivar. Sem categorias. |
+| 14a | Nota do dia | Uma por (hábito, dia), e **só existe em dia marcado**: anotar é dizer o que você fez. Convite discreto embaixo do card quando o dia fecha; some sozinho em 8s. Desmarcar não apaga a nota — ela fica na lista, dita sem marcação, e volta ao normal se o dia for marcado de novo. |
 | 15 | Lembrete | Um `reminderTime` por hábito, só nos dias agendados. |
 | 16 | Navegação | Stack única, sem tabs. |
 | 17 | Home | Dois modos: card com grid (padrão) e lista compacta. Preferência persistida. |
 | 18 | Marcar | Toque no card (home); arrastar (detalhe). Grid da home é só leitura. |
 | 19 | Visão geral | Uma tela, três seções: calendário de anéis, números, matriz hábitos × 30 dias. |
-| 20 | Ajustes | Arquivados + reordenar · export/import JSON · virada do dia e início da semana. |
+| 20 | Ajustes | Arquivados + reordenar · export/import JSON · relatório `.md` · virada do dia e início da semana. |
 | 21 | Widget | **Três entradas no seletor**: hábito pequeno, hábito médio e lista compacta. Toque marca hoje. Leem um snapshot JSON. |
 | 22 | Tipografia | Barlow Condensed, família única, 300–700, app inteiro e widget. |
 | 23 | Estilo | StyleSheet + tokens rígidos. **Sem NativeWind.** |
@@ -305,7 +307,10 @@ Card de streak: `EDITAR META`, numeral gigante, `SUA META / <nome>`,
 `RECORDE` e `SEQUÊNCIA ATUAL`, com numerais fantasma ao fundo.
 Heatmap com rótulos de mês e de dia da semana. Calendário mensal navegável — hoje contornado,
 dia completo preenchido, dia com nota com um ponto indicador, pressão longa abre a nota.
-Bolinhas do passado alternam ao toque. Rodapé fixo: **ARRASTE PARA COMPLETAR**.
+Bolinhas do passado alternam ao toque; a pressão longa só abre a nota em dia marcado ou que já
+tenha uma. Logo abaixo da grade, uma legenda diz as duas coisas — nenhum dos dois gestos se
+anuncia sozinho. Abaixo do calendário, **NOTAS**: as três mais recentes e, quando há mais,
+`VER TODAS AS N NOTAS`. Rodapé fixo: **ARRASTE PARA COMPLETAR**.
 
 ### 7.3 Formulário (modal)
 Nome · descrição · ícone (busca em Lucide + aba de emoji) · cor (as 10) · agenda (dias da semana
@@ -318,6 +323,7 @@ matriz hábitos × últimos 30 dias. Tocar num dia abre o resumo daquele dia.
 
 ### 7.5 Ajustes
 Hábitos arquivados (restaurar / excluir de vez) · reordenar hábitos · exportar e importar JSON ·
+exportar o relatório `.md` (só sai, nunca volta) ·
 virada do dia · primeiro dia da semana · versão.
 
 ### 7.6 Widgets
@@ -345,6 +351,12 @@ Cada receiver é uma entrada no plugin `react-native-android-widget` em `app.jso
 Dentro de cada layout a área de dias ainda sai da caixa medida: onde as sete linhas da semana
 cabem em pé é a grade de sempre, onde não cabem ela deita numa faixa de dias, e a lista compacta
 corta as linhas pelo que a altura comporta. Marcar em qualquer um deles redesenha os três.
+
+### 7.7 Notas do hábito
+Rota própria (`/habito/notas/[id]`). Todas as notas daquele hábito, agrupadas por mês, da mais
+nova para a mais velha; tocar numa abre a edição, com `Remover nota` e confirmação que nomeia o
+dia. Rodapé fixo: **ESCREVER NOTA**, que abre o calendário do mês em modo de escolha — dia
+marcado responde ao toque, o resto fica inerte. É por aqui que se preenche o dia esquecido.
 
 ---
 
@@ -402,6 +414,15 @@ Quebrar o receiver único nas três entradas da 7.6 · configuração só para a
 lista compacta lendo os ativos por `position` · task handler roteando por `widgetName`.
 Testes: seleção e corte da lista no `widget-snapshot.ts`.
 
+### Fatia 12 · Nota no fluxo do dia e relatório para ler
+Convite de nota embaixo do card na home · histórico de notas na tela do hábito ·
+`exportReport` sobre `domain/report.ts`. Testes: `report.ts`.
+
+### Fatia 13 · Tela de notas
+Nota presa a dia marcado · prévia de três na tela do hábito · rota `/habito/notas/[id]` com a
+lista inteira, edição, remoção com confirmação e escolha de dia pelo calendário em modo
+`escolher`.
+
 ---
 
 ## 9. Dependências externas de você
@@ -424,3 +445,6 @@ Nada disso bloqueia nenhuma fatia depois da 0.
 | 2026-08-26 | Snapshot do widget vai para a versão 3: a descrição do hábito passa a viajar no arquivo, porque o widget médio a mostra e o headless não tem SQLite para perguntar. O snapshot também passa a sair do banco na ordem de `position` — a lista compacta desenha nessa ordem e nenhuma outra. Snapshot v2 é descartado; o app reescreve na primeira abertura. |
 | 2026-08-26 | A bolinha de hoje marca e desmarca nos três widgets, e não só o botão do médio. É o alvo que a lista compacta já teria de ter — uma linha por hábito não comporta um botão de 48dp — e repeti-lo nos outros dois evita que a mesma bolinha signifique coisas diferentes em cada entrada do seletor. |
 | 2026-08-26 | Login Google e sync saem do app. O login parou de funcionar no APK assinado localmente e, olhando para o que ele custava — Supabase, OAuth, SHA-1 por keystore, uma tabela de cursor, um motor de merge e uma cópia semanal na conta —, a resposta honesta é que um app de hábitos de uma pessoa só não precisa de servidor. Backup passa a ser só o arquivo JSON, exportado e importado à mão. Ficam de pé o `updated_at` (a importação decide por ele), o soft delete (é assim que a exclusão viaja no arquivo) e a purga dos 90 dias, agora manutenção do aparelho. A coluna `user_id` fica na tabela, sempre nula: ela faz parte do formato v1 do arquivo, e tirá-la invalidaria todo backup já exportado. |
+| 2026-08-27 | A nota do dia sai de trás da pressão longa. Ela existia desde a fatia 5, mas só se escrevia dentro do calendário do hábito, um dia por vez, e só se relia do mesmo jeito — o que é o oposto de um diário. Passa a ter dois caminhos: um convite discreto embaixo do card, no instante em que o dia fecha na home, e um histórico na tela do hábito. A nota continua independente da marcação: o dia que falhou também merece explicação. |
+| 2026-08-27 | O backup ganha um irmão que só sai: um `.md` com hábito, mês, dia, se foi feito e a nota escrita. O JSON continua sendo o único que a importação lê — misturar as duas coisas num arquivo só faria o formato de restauração depender de como se lê um texto. Por isso `domain/report.ts` não reaproveita os tipos de `domain/backup.ts`: o backup é contrato com o passado, o relatório pode mudar quando ficar melhor de ler. |
+| 2026-08-27 | A nota passa a existir só em dia marcado. Anotar é dizer o que você fez, e não havia como um dia não feito ganhar texto sem que "feito" e "anotado" quisessem dizer coisas diferentes em cada tela. O dia esquecido — que era o motivo real de deixar a nota solta — ganha caminho próprio: a tela de notas escolhe o dia num calendário onde só o dia marcado responde. Desmarcar não apaga nota nenhuma: o texto é seu, a marcação é que é o dado. |
