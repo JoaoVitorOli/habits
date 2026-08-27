@@ -44,7 +44,13 @@ type Props = {
   completedDays: ReadonlySet<Day>;
   accent: string;
   noteDays: ReadonlySet<Day>;
-  onToggleDay: (day: Day) => void;
+  /**
+   * `marcar`: o toque marca o dia e a pressao longa abre a nota. `escolher`: o toque escolhe o
+   * dia e nada muda no banco — so os dias que aceitam nota respondem.
+   */
+  mode?: 'marcar' | 'escolher';
+  /** ausente em `escolher`: ali o toque nao marca nada */
+  onToggleDay?: (day: Day) => void;
   onOpenNote: (day: Day) => void;
 };
 
@@ -55,9 +61,11 @@ export function MonthCalendar({
   completedDays,
   accent,
   noteDays,
+  mode = 'marcar',
   onToggleDay,
   onOpenNote,
 }: Props) {
+  const picking = mode === 'escolher';
   const breakpoint = useBreakpoint();
   const shift = useSharedValue(0);
   const fade = useSharedValue(1);
@@ -132,22 +140,35 @@ export function MonthCalendar({
         {days.map((day) => {
           const done = completedDays.has(day);
           const future = day > today;
+          /* so dia feito aceita nota nova; o que ja tem uma segue editavel mesmo desmarcado */
+          const takesNote = done || noteDays.has(day);
+          const inert = future || (picking && !takesNote);
 
           return (
             <PressableScale
               key={day}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: done, disabled: future }}
+              accessibilityRole={picking ? 'button' : 'checkbox'}
+              accessibilityState={picking ? { disabled: inert } : { checked: done, disabled: inert }}
               accessibilityLabel={day}
-              disabled={future}
+              disabled={inert}
               onPress={() => {
+                if (picking) {
+                  Haptics.selectionAsync();
+                  onOpenNote(day);
+                  return;
+                }
+
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onToggleDay(day);
+                onToggleDay?.(day);
               }}
-              onLongPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onOpenNote(day);
-              }}
+              onLongPress={
+                picking || !takesNote
+                  ? undefined
+                  : () => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      onOpenNote(day);
+                    }
+              }
               style={[styles.cell, { height }]}>
               <View
                 style={[
@@ -155,11 +176,11 @@ export function MonthCalendar({
                   { width: dot, height: dot },
                   done ? { backgroundColor: accent } : null,
                   day === today ? styles.todayRing : null,
-                  future ? styles.future : null,
+                  inert ? styles.inert : null,
                 ]}>
                 <Text
                   variant="caption"
-                  tone={done ? 'ink' : future ? 'inkDisabled' : 'inkMuted'}
+                  tone={done ? 'ink' : inert ? 'inkDisabled' : 'inkMuted'}
                   tabular>
                   {Number(day.slice(8))}
                 </Text>
@@ -173,6 +194,13 @@ export function MonthCalendar({
           );
         })}
       </Animated.View>
+
+      {/* o toque e a pressao longa nao se anunciam sozinhos: a dica mora colada no gesto */}
+      {picking ? null : (
+        <Text variant="caption" tone="inkFaint">
+          Toque num dia para marcar. Segure um dia marcado para anotar o que você fez nele.
+        </Text>
+      )}
     </View>
   );
 }
@@ -194,6 +222,7 @@ const styles = StyleSheet.create({
   },
   /* o anel de hoje e claro: sobre o preenchido da cor do habito, um anel da mesma cor sumiria */
   todayRing: { borderColor: color.ink },
-  future: { backgroundColor: withOpacity(color.ground, 0.6), opacity: 0.45 },
+  /* dia que nao responde ao toque: o futuro, e em `escolher` tambem o dia que nao foi feito */
+  inert: { backgroundColor: withOpacity(color.ground, 0.6), opacity: 0.45 },
   noteDot: { position: 'absolute', bottom: space.xs, width: 4, height: 4, borderRadius: radius.pill },
 });

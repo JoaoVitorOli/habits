@@ -1,34 +1,41 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-import type { Day } from '@/domain/calendar';
+import type { Day, Month } from '@/domain/calendar';
+import { MonthCalendar } from '@/features/habit-detail/month-calendar';
 import { Button } from '@/ui/button';
 import { Text } from '@/ui/text';
-import { TextField } from '@/ui/text-field';
 import { color, radius, space } from '@/ui/theme';
 import { useOverlayTransition } from '@/ui/use-overlay-transition';
 
-const MONTH_NAMES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
-
-function readableDay(day: Day): string {
-  const [, month, date] = day.split('-');
-  return `${Number(date)} de ${MONTH_NAMES[Number(month) - 1]}`;
-}
-
 type Props = {
-  day: Day | null;
-  initialText: string;
-  onSave: (text: string) => void;
+  visible: boolean;
+  month: Month;
+  onMonthChange: (month: Month) => void;
+  today: Day;
+  completedDays: ReadonlySet<Day>;
+  noteDays: ReadonlySet<Day>;
+  accent: string;
+  onPick: (day: Day) => void;
   onClose: () => void;
 };
 
-export function DayNoteDialog({ day, initialText, onSave, onClose }: Props) {
-  const { mounted, progress } = useOverlayTransition(day !== null);
-  const [text, setText] = useState(initialText);
+/**
+ * O mesmo calendario da tela do habito, em modo de escolha: o dia que voce marcou responde ao
+ * toque, o resto fica inerte. E assim que a regra "so existe nota em dia feito" se ve.
+ */
+export function DayPickerDialog({
+  visible,
+  month,
+  onMonthChange,
+  today,
+  completedDays,
+  noteDays,
+  accent,
+  onPick,
+  onClose,
+}: Props) {
+  const { mounted, progress } = useOverlayTransition(visible);
 
   const backdrop = useAnimatedStyle(() => ({ opacity: progress.get() * 0.7 }));
 
@@ -45,36 +52,31 @@ export function DayNoteDialog({ day, initialText, onSave, onClose }: Props) {
       <Pressable style={styles.fill} onPress={onClose} accessibilityLabel="Fechar">
         <Animated.View style={[styles.backdrop, backdrop]} pointerEvents="none" />
 
-        <KeyboardAvoidingView
-          style={styles.center}
-          pointerEvents="box-none"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.center} pointerEvents="box-none">
           <Pressable onPress={() => undefined} style={styles.wrapper}>
             <Animated.View style={[styles.card, card]}>
               <View style={styles.words}>
-                <Text variant="heading">Nota de {day === null ? '' : readableDay(day)}</Text>
+                <Text variant="heading">Que dia?</Text>
                 <Text variant="body" tone="inkMuted">
-                  O que aconteceu nesse dia. Apagar o texto remove a nota.
+                  Só os dias que você marcou aceitam nota.
                 </Text>
               </View>
 
-              <TextField
-                label="Nota"
-                value={text}
-                onChangeText={setText}
-                placeholder="Foi puxado, mas fui"
-                maxLength={500}
-                multiline
-                autoFocus
+              <MonthCalendar
+                month={month}
+                onMonthChange={onMonthChange}
+                today={today}
+                completedDays={completedDays}
+                accent={accent}
+                noteDays={noteDays}
+                mode="escolher"
+                onOpenNote={onPick}
               />
 
-              <View style={styles.actions}>
-                <Button label="Cancelar" variant="ghost" onPress={onClose} style={styles.action} />
-                <Button label="Salvar nota" onPress={() => onSave(text)} style={styles.action} />
-              </View>
+              <Button label="Cancelar" variant="ghost" onPress={onClose} />
             </Animated.View>
           </Pressable>
-        </KeyboardAvoidingView>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -108,6 +110,4 @@ const styles = StyleSheet.create({
     elevation: 24,
   },
   words: { gap: space.sm },
-  actions: { flexDirection: 'row', gap: space.sm },
-  action: { flex: 1 },
 });

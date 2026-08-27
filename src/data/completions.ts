@@ -21,11 +21,14 @@ export function completionsOfHabit(habitId: string) {
     .where(and(eq(completions.habitId, habitId), isNull(completions.deletedAt)));
 }
 
+/** Como o dia ficou depois do toque: quem chamou nao precisa refazer a conta da meta. */
+export type MarkResult = { count: number; done: boolean };
+
 /**
  * Uma linha por (habito, dia) com `count`. Isso torna a marcacao idempotente e da ao
  * sync uma linha canonica por dia. Ao bater a meta, o proximo toque zera.
  */
-export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Promise<void> {
+export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Promise<MarkResult> {
   const timestamp = now.toISOString();
   const [existing] = await db
     .select()
@@ -43,7 +46,7 @@ export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Pr
       deletedAt: null,
     });
     refreshWidgets();
-    return;
+    return { count: 1, done: 1 >= habit.targetPerDay };
   }
 
   const count = existing.count >= habit.targetPerDay ? 0 : existing.count + 1;
@@ -54,4 +57,5 @@ export async function toggleCompletion(habit: HabitRow, day: Day, now: Date): Pr
     .where(eq(completions.id, existing.id));
 
   refreshWidgets();
+  return { count, done: count >= habit.targetPerDay };
 }

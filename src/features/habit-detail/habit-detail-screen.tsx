@@ -10,17 +10,18 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { completionsOfHabit, toggleCompletion } from '@/data/completions';
 import { archiveHabit, habitByIdQuery, updateStreakGoal } from '@/data/habits';
-import { notesOfHabit, saveNote } from '@/data/notes';
+import { notesOfHabit, removeNote, saveNote } from '@/data/notes';
 import { usePreferences } from '@/data/settings';
 import { monthOf, type Day } from '@/domain/calendar';
 import { paletteKeyOf } from '@/domain/palette';
 import { scheduleOf, weekdaysOf, type Schedule } from '@/domain/schedule';
 import { monthRate } from '@/domain/stats';
 import { currentStreak, goalProgress, recordStreak, streakUnit } from '@/domain/streak';
-import { DayNoteDialog } from '@/features/habit-detail/day-note-dialog';
+import { DayNoteDialog } from '@/features/day-note/day-note-dialog';
 import { DragToComplete } from '@/features/habit-detail/drag-to-complete';
 import { Heatmap } from '@/features/habit-detail/heatmap';
 import { MonthCalendar } from '@/features/habit-detail/month-calendar';
+import { NoteHistory } from '@/features/habit-detail/note-history';
 import { StreakCard } from '@/features/habit-detail/streak-card';
 import { StreakGoalDialog } from '@/features/streak-goal/streak-goal-dialog';
 import { useToday } from '@/features/use-today';
@@ -81,6 +82,14 @@ export function HabitDetailScreen({ id }: { id: string }) {
   }, [notes]);
 
   const noteDays = useMemo(() => new Set(notesByDay.keys()), [notesByDay]);
+
+  const noteEntries = useMemo(
+    () =>
+      [...notes]
+        .sort((left, right) => right.day.localeCompare(left.day))
+        .map((note) => ({ day: note.day, text: note.text, done: completedDays.has(note.day) })),
+    [notes, completedDays],
+  );
 
   if (!habit) return <View style={styles.screen} />;
 
@@ -143,6 +152,13 @@ export function HabitDetailScreen({ id }: { id: string }) {
         noteDays={noteDays}
         onToggleDay={toggle}
         onOpenNote={setNoteDay}
+      />
+      <NoteHistory
+        notes={noteEntries}
+        today={today}
+        accent={accent}
+        onOpen={setNoteDay}
+        onSeeAll={() => router.push({ pathname: '/habito/notas/[id]', params: { id: habit.id } })}
       />
     </View>
   );
@@ -207,6 +223,14 @@ export function HabitDetailScreen({ id }: { id: string }) {
           if (noteDay !== null) saveNote(habit.id, noteDay, text, new Date());
           setNoteDay(null);
         }}
+        onRemove={
+          noteDay !== null && notesByDay.has(noteDay)
+            ? () => {
+                removeNote(habit.id, noteDay, new Date());
+                setNoteDay(null);
+              }
+            : undefined
+        }
         onClose={() => setNoteDay(null)}
       />
 
